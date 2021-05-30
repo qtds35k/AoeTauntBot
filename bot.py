@@ -15,6 +15,8 @@ async def taunt(ctx):
     if ctx.message.author.voice == None:
         await ctx.send(f'{ctx.message.author.mention} 你要進語音才聽得到喔')
         channel = discord.utils.get(ctx.guild.channels, name='Click here to speak')
+        if not channel:
+            return
     else:
         channel = ctx.message.author.voice.channel
     
