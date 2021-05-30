@@ -13,8 +13,7 @@ async def on_ready():
 @client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '29', '30', '34', '35', '104', '105'])
 async def taunt(ctx):
     if ctx.message.author.voice == None:
-        await ctx.send(f'{ctx.message.author.mention} 你要先進語音才能打指令')
-        return
+        await ctx.send(f'{ctx.message.author.mention} 你要進語音才聽得到喔')
 
     if not discord.opus.is_loaded():
         discord.opus.load_opus('libopus.so')
@@ -31,7 +30,7 @@ async def taunt(ctx):
     source = FFmpegPCMAudio(tauntUrl)
 
     player = voice.play(source)
-    
+
     while voice.is_playing(): # Checks if voice is playing
         await asyncio.sleep(1) # While it's playing it sleeps for 1 second
     else:
