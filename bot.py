@@ -25,7 +25,6 @@ async def taunt(ctx):
 
     tauntCode = ctx.message.content.replace('.','')
     tauntUrl = tauntCode + '.ogg'
-    # tauntUrl = 'http://oz.nthu.edu.tw/~u9722123/aoeTauntResources/' + tauntCode + '.ogg'
     source = FFmpegPCMAudio(tauntUrl)
 
     player = voice.play(source)
