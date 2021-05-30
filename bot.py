@@ -10,7 +10,7 @@ client = commands.Bot(command_prefix = '.')
 async def on_ready():
     print('Bot onboard.')
 
-@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '29', '30', '34', '35', '104', '105'])
+@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '29', '30', '34', '35', '104', '105', '301', '302'])
 async def taunt(ctx):
     if ctx.message.author.voice == None:
         await ctx.send(f'{ctx.message.author.mention} 你要進語音才聽得到喔')
