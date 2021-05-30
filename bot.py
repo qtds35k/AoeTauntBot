@@ -14,11 +14,12 @@ async def on_ready():
 async def taunt(ctx):
     if ctx.message.author.voice == None:
         await ctx.send(f'{ctx.message.author.mention} 你要進語音才聽得到喔')
-
+        channel = discord.utils.get(ctx.guild.channels, name='Click here to speak')
+    else:
+        channel = ctx.message.author.voice.channel
+    
     if not discord.opus.is_loaded():
         discord.opus.load_opus('libopus.so')
-
-    channel = ctx.message.author.voice.channel
     voice = get(client.voice_clients, guild=ctx.guild)
     if voice and voice.is_connected():
         await voice.move_to(channel)
