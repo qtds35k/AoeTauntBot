@@ -16,6 +16,8 @@ async def taunt(ctx):
         await ctx.send(f'{ctx.message.author.mention} 你要先進語音才能打指令')
         return
 
+    discord.opus.load_opus()
+
     channel = ctx.message.author.voice.channel
     voice = get(client.voice_clients, guild=ctx.guild)
     if voice and voice.is_connected():
