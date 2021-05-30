@@ -39,7 +39,7 @@ async def taunt(ctx):
     while voice.is_playing(): # Checks if voice is playing
         await asyncio.sleep(2) # While it's playing it sleeps for 2 second
     else:
-        ctx.message.delete()
+        await ctx.message.delete()
         await asyncio.sleep(60) # If it's not playing it waits 60 seconds
         while voice.is_playing(): # and checks once again if the bot is not playing
             break # if it's playing it breaks
