@@ -12,6 +12,7 @@ async def on_ready():
 
 @client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '29', '30', '34', '35', '104', '105', '301', '302'])
 async def taunt(ctx):
+    botMessage = ''
     if ctx.message.author.voice == None:
         channel = discord.utils.get(ctx.guild.channels, name='General')
         if channel:
@@ -50,7 +51,7 @@ async def taunt(ctx):
 
     print('Bot about to clear commands')
     # Cleanup command (and bot message)
-    if botMessage:
+    if botMessage != '':
         await botMessage.delete()
     await ctx.message.delete()
 
