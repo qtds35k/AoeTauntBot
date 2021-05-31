@@ -47,7 +47,7 @@ async def taunt(ctx):
     try:
         player = voice.play(source)
     except:
-        print("Another taunt is playing. Dropping this request: " + await ctx.message.content)
+        print("Another taunt is playing. Dropping request...")
 
     while voice.is_playing():
         await asyncio.sleep(60)
