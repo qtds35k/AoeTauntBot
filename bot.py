@@ -40,7 +40,6 @@ async def taunt(ctx):
     tauntUrl = tauntCode + '.ogg'
     source = FFmpegPCMAudio(tauntUrl)
 
-    await ctx.message.delete() # Cleanup command right before playing taunt
     player = voice.play(source)
 
     while voice.is_playing(): # Checks if voice is playing
@@ -51,6 +50,11 @@ async def taunt(ctx):
             break # if it's playing it breaks
         else:
             await voice.disconnect() # if not it disconnects
+
+    # Cleanup command (and bot message)
+    if botMessage:
+        await botMessage.delete()
+    await ctx.message.delete()
 
 @client.command(name='0')
 async def leave(ctx):
