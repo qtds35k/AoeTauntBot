@@ -44,7 +44,10 @@ async def taunt(ctx):
     tauntUrl = tauntCode + '.ogg'
     source = FFmpegPCMAudio(tauntUrl)
 
-    player = voice.play(source)
+    try:
+        player = voice.play(source)
+    except:
+        print("Another taunt is playing. Dropping this request")
 
     while voice.is_playing():
         await asyncio.sleep(60)
