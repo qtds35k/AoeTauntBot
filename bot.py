@@ -42,15 +42,13 @@ async def taunt(ctx):
 
     player = voice.play(source)
 
-    while voice.is_playing(): # Checks if voice is playing
-        await asyncio.sleep(2) # While it's playing it sleeps for 2 second
+    while voice.is_playing():
+        await asyncio.sleep(60)
     else:
-        await asyncio.sleep(60) # If it's not playing it waits 60 seconds
-        while voice.is_playing(): # and checks once again if the bot is not playing
-            break # if it's playing it breaks
-        else:
-            await voice.disconnect() # if not it disconnects
+        print('Bot disconnecting...')
+        await voice.disconnect()
 
+    print('Bot about to clear commands')
     # Cleanup command (and bot message)
     if botMessage:
         await botMessage.delete()
