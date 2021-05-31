@@ -21,8 +21,9 @@ async def taunt(ctx):
             botMessage = await ctx.send(f'{ctx.message.author.mention} 你要進語音才聽得到喔')
             if not channel:
                 await asyncio.sleep(5)
+                # Cleanup command and bot message right before function return
                 await botMessage.delete()
-                await ctx.message.delete() # user taunt command deleted here
+                await ctx.message.delete()
                 return
     else:
         channel = ctx.message.author.voice.channel
@@ -39,13 +40,15 @@ async def taunt(ctx):
     tauntUrl = tauntCode + '.ogg'
     source = FFmpegPCMAudio(tauntUrl)
 
+    # Cleanup command (and bot message) right before playing taunt
+    await botMessage.delete()
+    await ctx.message.delete()
+
     player = voice.play(source)
 
     while voice.is_playing(): # Checks if voice is playing
         await asyncio.sleep(2) # While it's playing it sleeps for 2 second
-        await ctx.message.delete() # user taunt command deleted here
     else:
-        await ctx.message.delete() # user taunt command deleted here
         await asyncio.sleep(60) # If it's not playing it waits 60 seconds
         while voice.is_playing(): # and checks once again if the bot is not playing
             break # if it's playing it breaks
