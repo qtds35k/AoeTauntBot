@@ -12,16 +12,18 @@ async def on_ready():
 
 @client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '29', '30', '34', '35', '104', '105', '301', '302'])
 async def taunt(ctx):
-    await asyncio.sleep(2)
-    await ctx.message.delete()
-
     if ctx.message.author.voice == None:
-        botMessage = await ctx.send(f'{ctx.message.author.mention} 你要進語音才聽得到喔')
-        await asyncio.sleep(5)
-        await botMessage.delete()
-        channel = discord.utils.get(ctx.guild.channels, name='Click here to speak')
-        if not channel:
-            return
+        channel = discord.utils.get(ctx.guild.channels, name='General')
+        if channel:
+            botMessage = await ctx.send(f'{ctx.message.author.mention} You have to join voice channel to hear the taunt!')
+        else:
+            channel = discord.utils.get(ctx.guild.channels, name='Click here to speak')
+            botMessage = await ctx.send(f'{ctx.message.author.mention} 你要進語音才聽得到喔')
+            if not channel:
+                await asyncio.sleep(5)
+                await botMessage.delete()
+                await ctx.message.delete() # user taunt command deleted here
+                return
     else:
         channel = ctx.message.author.voice.channel
 
@@ -41,7 +43,9 @@ async def taunt(ctx):
 
     while voice.is_playing(): # Checks if voice is playing
         await asyncio.sleep(2) # While it's playing it sleeps for 2 second
+        await ctx.message.delete() # user taunt command deleted here
     else:
+        await ctx.message.delete() # user taunt command deleted here
         await asyncio.sleep(60) # If it's not playing it waits 60 seconds
         while voice.is_playing(): # and checks once again if the bot is not playing
             break # if it's playing it breaks
