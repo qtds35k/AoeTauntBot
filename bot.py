@@ -35,7 +35,10 @@ async def taunt(ctx):
     if voice and voice.is_connected():
         await voice.move_to(channel)
     else:
-        voice = await channel.connect()
+        try:
+            voice = await channel.connect()
+        except:
+            print("Bot already connected")
 
     tauntCode = ctx.message.content.replace('.','')
     tauntUrl = tauntCode + '.ogg'
@@ -46,14 +49,14 @@ async def taunt(ctx):
     while voice.is_playing():
         await asyncio.sleep(60)
     else:
-        print('Bot disconnecting...')
         await voice.disconnect()
+        print('Bot disconnected')
 
-    print('Bot about to clear commands')
     # Cleanup command (and bot message)
     if botMessage != '':
         await botMessage.delete()
     await ctx.message.delete()
+    print('Commands are cleared')
 
 @client.command(name='0')
 async def leave(ctx):
