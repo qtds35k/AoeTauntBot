@@ -61,6 +61,20 @@ async def taunt(ctx):
     await ctx.message.delete()
     print('Commands are cleared')
 
+@client.command(pass_context=True)
+async def help(ctx):
+    author = ctx.message.author
+    
+    embed = discord.Embed(
+        colour = discord.Colour.orange()
+    )
+    
+    embed.set_author(name='Help')
+    helpMsg = 'Usage: simply type \'.\' followed by AOE2 in-game taunt code, the bot will go into voice channel and shout out the taunt. E.g., type .14 , bot will say \"Start the game already!\"'
+    embed.add_field(name='.taunt', value=helpMsg, inline=False)
+    
+    await client.send_message(author, embed=embed)
+
 @client.command(name='0')
 async def leave(ctx):
     server = ctx.message.guild.voice_client
