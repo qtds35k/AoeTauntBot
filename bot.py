@@ -9,7 +9,7 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    await client.change_presence(status=discord.Status.idle, activity=discord.ActivityType.listenting('.help'))
+    await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listenting, name='.help'))
     print('Bot onboard.')
 
 @client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '104', '105', '301', '302'])
