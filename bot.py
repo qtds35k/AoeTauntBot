@@ -64,14 +64,17 @@ async def taunt(ctx):
 
 @client.command(pass_context=True)
 async def help(ctx):
-    helpMsg = 'Usage: simply type \'.\' followed by AOE2 in-game taunt code, the bot will go into voice channel and shout out the taunt. E.g., type .14 , bot will say \"Start the game already!\"'
     channel = ctx.message.channel
-    const embed = new Discord.MessageEmbed()
-      .setColor(0x00AE86)
-      .setAuthor(name='Help')
-      .addField(name='.taunt', value=helpMsg, inline=False)
     
-    await channel.send(embed)
+    embed = discord.Embed(
+        color = discord.Color.orange()
+    )
+    
+    helpMsg = 'Usage: simply type \'.\' followed by AOE2 in-game taunt code, the bot will go into voice channel and shout out the taunt. E.g., type .14 , bot will say \"Start the game already!\"'
+    embed.set_author(name='Help')
+    embed.add_field(name='.taunt', value=helpMsg, inline=False)
+    
+    await channel.send(embed=e)
 
 @client.command(name='0')
 async def leave(ctx):
