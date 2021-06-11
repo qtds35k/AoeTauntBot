@@ -5,6 +5,7 @@ from discord.utils import get
 
 TOKEN = 'ODQ4MTQ5NDQxMjczNjU5NDEy.YLIauA.cIId5X7ZtbpWj7yEYiywrmIwjIM'
 client = commands.Bot(command_prefix = '.')
+client.remove_command('help')
 
 @client.event
 async def on_ready():
