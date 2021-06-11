@@ -66,9 +66,9 @@ async def taunt(ctx):
 async def help(ctx):
     channel = ctx.message.channel
     
-    helpMsg = 'Usage: simply type \'.\' followed by AOE2 in-game taunt code, the bot will go into voice channel and shout out the taunt. Example: type \" .14 \", bot will say \"Start the game already!\"'
+    helpMsg = 'Simply type a dot ( . ) followed by AOE2 in-game taunt code, the bot will go into voice channel and shout out the taunt. Example: type \" .14 \", bot will say \"Start the game already\"'
     embed = discord.Embed(color = discord.Color.orange())
-    embed.add_field(name='Help', value=helpMsg, inline=False)
+    embed.add_field(name='Usage', value=helpMsg, inline=False)
     
     await channel.send(embed=embed)
 
