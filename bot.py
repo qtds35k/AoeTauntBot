@@ -70,7 +70,7 @@ async def help(ctx):
     embed = discord.Embed(color = discord.Color.orange())
     
     helpMsg = 'Simply type a dot ( . ) followed by AOE2 in-game taunt code. The bot will enter voice channel and shout out the taunt.\n Example: type \" .14 \" -> bot will say \"Start the game already\"'
-    embed.add_field(name='Usage', value=helpMsg, inline=False)helpMsg = 'Simply type a dot ( . ) followed by AOE2 in-game taunt code. The bot will enter voice channel and shout out the taunt.\n Example: type \" .14 \" -> bot will say \"Start the game already\"'
+    embed.add_field(name='Usage', value=helpMsg, inline=False)
     
     additionalTaunt = 'ahnia, gan, gan2, gibai, in, nene, say, yahoo'
     embed.add_field(name='GIJoe', value=additionalTaunt, inline=False)
