@@ -72,7 +72,7 @@ async def help(ctx):
     helpMsg = 'Simply type a dot ( . ) followed by AOE2 in-game taunt code. The bot will enter voice channel and shout out the taunt.\n Example: type \" .14 \" -> bot will say \"Start the game already\"'
     embed.add_field(name='Usage', value=helpMsg, inline=False)
     
-    otherAoeSounds = '301/302 (MBL wololo), bling,  perv'
+    otherAoeSounds = '301/302 (MBL wololo), bling, gg, perv'
     embed.add_field(name='Other AOE sounds', value=otherAoeSounds, inline=False)
     
     additionalTaunt = 'ahnia, gan, gan2, gibai, guan, in, maja, majaja, nene, say, yahoo'
