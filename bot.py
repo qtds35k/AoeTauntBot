@@ -12,7 +12,7 @@ async def on_ready():
     await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name='.help'))
     print('Bot onboard.')
 
-@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '104', '105', '301', '302', 'ahnia', 'bling', 'gan', 'gan2', 'gibai', 'guan', 'in', 'maja', 'majaja', 'nene', 'perv', 'say', 'yahoo'])
+@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '104', '105', '301', '302', 'ahnia', 'bling', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'in', 'maja', 'majaja', 'nene', 'perv', 'say', 'yahoo'])
 async def taunt(ctx):
     botMessage = ''
     if ctx.message.author.voice == None:
