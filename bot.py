@@ -7,8 +7,6 @@ TOKEN = 'ODQ4MTQ5NDQxMjczNjU5NDEy.YLIauA.cIId5X7ZtbpWj7yEYiywrmIwjIM'
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
 
-const activities = 
-
 @client.event
 async def on_ready():
     # await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name='.help'))
