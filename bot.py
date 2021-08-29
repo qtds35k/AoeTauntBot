@@ -13,7 +13,7 @@ async def on_ready():
     # await client.change_presence(status=discord.Status.idle, activity=discord.Game(name="你媽的奶奶"))
     print('Bot onboard.')
 
-@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '104', '105', '301', '302', 'ahnia', 'bling', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'in', 'maja', 'majaja', 'nene', 'perv', 'say', 'yahoo'])
+@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '104', '105', '301', '302', 'ahnia', 'bling', 'dog', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'in', 'maja', 'majaja', 'nene', 'perv', 'say', 'yahoo'])
 async def taunt(ctx):
     botMessage = ''
     if ctx.message.author.voice == None:
@@ -73,7 +73,7 @@ async def help(ctx):
     helpMsg = 'Simply type a dot ( . ) followed by AOE2 in-game taunt code. The bot will enter voice channel and shout out the taunt.\n Example: type \" .14 \" -> bot will say \"Start the game already\"'
     embed.add_field(name='Usage', value=helpMsg, inline=False)
     
-    otherAoeSounds = '301/302 (MBL wololo), bling, gg, perv'
+    otherAoeSounds = '301/302 (MBL wololo), bling, dog, gg, perv'
     embed.add_field(name='Other AOE sounds', value=otherAoeSounds, inline=False)
     
     additionalTaunt = 'ahnia, gan, gan2, gibai, guan, in, maja, majaja, nene, say, yahoo'
