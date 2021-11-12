@@ -13,7 +13,7 @@ async def on_ready():
     # await client.change_presence(status=discord.Status.idle, activity=discord.Game(name="你媽的奶奶"))
     print('Bot onboard.')
 
-@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '104', '105', '301', '302', 'ahnia', 'bling', 'crap', 'dog', 'door', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'in', 'maja', 'majaja', 'nene', 'perv', 'pogo', 'say', 'spag', 'yahoo'])
+@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '69', '104', '105', '301', '302', 'ahnia', 'bling', 'crap', 'dog', 'door', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'in', 'maja', 'majaja', 'nene', 'perv', 'pogo', 'say', 'spag', 'yahoo'])
 async def taunt(ctx):
     botMessage = ''
     if ctx.message.author.voice == None:
@@ -76,7 +76,7 @@ async def help(ctx):
     otherAoeSounds = '301/302 (MBL wololo), bling, crap, dog, door, gg, perv, pogo'
     embed.add_field(name='Other AOE sounds', value=otherAoeSounds, inline=False)
     
-    additionalTaunt = 'ahnia, gan, gan2, gibai, guan, in, maja, majaja, nene, say, spag, yahoo'
+    additionalTaunt = '69, ahnia, gan, gan2, gibai, guan, in, maja, majaja, nene, say, spag, yahoo'
     embed.add_field(name='GIJoe', value=additionalTaunt, inline=False)
     
     await channel.send(embed=embed)
