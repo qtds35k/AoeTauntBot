@@ -77,7 +77,7 @@ async def help(ctx):
     embed.add_field(name='Other AOE sounds', value=otherAoeSounds, inline=False)
     
     additionalTaunt = '69, ahnia, gan, gan2, gibai, guan, in, maja, majaja, nene, roger, say, spag, turk, yahoo'
-    embed.add_field(name='GIJoe', value=additionalTaunt, inline=False)
+    embed.add_field(name='Additional taunts', value=additionalTaunt, inline=False)
     
     await channel.send(embed=embed)
 
