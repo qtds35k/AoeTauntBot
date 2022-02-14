@@ -11,7 +11,7 @@ client.remove_command('help')
 async def on_ready():
     await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name='.help'))
     # await client.change_presence(status=discord.Status.idle, activity=discord.Game(name="你媽的奶奶"))
-    print('Bot onboard.')
+    print('TauntBot onboard.')
 
 @client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '69', '104', '105', '301', '302', 'ahnia', 'bling', 'crap', 'dio', 'dog', 'door', 'fine', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'in', 'lilai', 'ma', 'maja', 'majaja', 'nene', 'perv', 'pogo', 'roger', 'say', 'spag', 'turk', 'yahoo', 'zawarudo'])
 async def taunt(ctx):
