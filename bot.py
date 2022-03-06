@@ -41,7 +41,7 @@ async def taunt(ctx):
         try:
             voice = await channel.connect()
         except:
-            print("Bot already connected.")
+            print('Bot already connected.')
 
     tauntCode = ctx.message.content.replace('.','')
     tauntUrl = tauntCode + '.ogg'
