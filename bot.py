@@ -13,7 +13,7 @@ async def on_ready():
     # await client.change_presence(status=discord.Status.idle, activity=discord.Game(name="你媽的奶奶"))
     print('TauntBot onboard.')
 
-@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '69', '104', '105', '301', '302', 'ahnia', 'bling', 'crap', 'die', 'die2', 'dio', 'dog', 'door', 'fine', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'in', 'lilai', 'ma', 'maja', 'majaja', 'me', 'nene', 'perv', 'pogo', 'roger', 'say', 'spag', 'turk', 'yahoo', 'zawarudo'])
+@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '69', '104', '105', '301', '302', 'ahnia', 'bling', 'crap', 'die', 'die2', 'dio', 'dog', 'door', 'fine', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'hey', 'in', 'lilai', 'ma', 'maja', 'majaja', 'me', 'nene', 'perv', 'pogo', 'roger', 'say', 'spag', 'turk', 'yahoo', 'zawarudo'])
 async def taunt(ctx):
     botMessage = ''
     if ctx.message.author.voice == None:
@@ -71,7 +71,7 @@ async def help(ctx):
     helpMsg = 'Simply type a dot ( . ) followed by AOE2 in-game taunt code. The bot will enter voice channel and shout out the taunt.\n Example: type \" .14 \" -> bot will say \"Start the game already\"'
     embed.add_field(name='Usage', value=helpMsg, inline=False)
     
-    otherAoeSounds = '301/302 (MBL wololo), bling, crap, dog, door, fine, gg, lilai, ma, perv, pogo'
+    otherAoeSounds = '301/302 (MBL wololo), bling, crap, dog, door, fine, gg, hey, lilai, ma, perv, pogo'
     embed.add_field(name='Other AOE sounds', value=otherAoeSounds, inline=False)
     
     additionalTaunt = '69, ahnia, die, die2, dio, gan, gan2, gibai, guan, in, maja, majaja, me, nene, roger, say, spag, turk, yahoo, zawarudo'
