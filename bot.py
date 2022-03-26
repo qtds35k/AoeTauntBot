@@ -13,7 +13,7 @@ async def on_ready():
     # await client.change_presence(status=discord.Status.idle, activity=discord.Game(name="你媽的奶奶"))
     print('TauntBot onboard.')
 
-@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '69', '104', '105', '301', '302', 'ahnia', 'bling', 'crap', 'die', 'die2', 'dio', 'dog', 'door', 'fine', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'hey', 'in', 'lilai', 'ma', 'maja', 'majaja', 'me', 'nene', 'perv', 'pogo', 'roger', 'say', 'spag', 'turk', 'yahoo', 'zawarudo'])
+@client.command(aliases=['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '69', '104', '105', '301', '302', 'ahnia', 'bling', 'crap', 'die', 'die2', 'die3', 'dio', 'dog', 'door', 'fine', 'gan', 'gan2', 'gg', 'gibai', 'guan', 'hey', 'in', 'lilai', 'ma', 'maja', 'majaja', 'me', 'nene', 'perv', 'pogo', 'roger', 'say', 'spag', 'turk', 'yahoo', 'zawarudo'])
 async def taunt(ctx):
     botMessage = ''
     if ctx.message.author.voice == None:
@@ -74,7 +74,7 @@ async def help(ctx):
     otherAoeSounds = '301/302 (MBL wololo), bling, crap, dog, door, fine, gg, hey, lilai, ma, perv, pogo'
     embed.add_field(name='Other AOE sounds', value=otherAoeSounds, inline=False)
     
-    additionalTaunt = '69, ahnia, die, die2, dio, gan, gan2, gibai, guan, in, maja, majaja, me, nene, roger, say, spag, turk, yahoo, zawarudo'
+    additionalTaunt = '69, ahnia, die, die2, die3, dio, gan, gan2, gibai, guan, in, maja, majaja, me, nene, roger, say, spag, turk, yahoo, zawarudo'
     embed.add_field(name='Additional taunts', value=additionalTaunt, inline=False)
     
     await channel.send(embed=embed)
