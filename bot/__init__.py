@@ -9,13 +9,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define package-level variables
-audio_dir = Path(__file__).parent / "sounds"
+audio_dir = Path(__file__).parent / "bot/audio"
 
 # Define package-level functions or classes
-def play_sound(sound_name):
+def play_audio(audio_name):
     """Play an audio file with the given name."""
-    sound_path = audio_dir / f"{sound_name}.ogg"
-    # code to play the sound file goes here
+    audio_path = audio_dir / f"{audio_name}.ogg"
+    # code to play the audio file goes here
 
 # Add package metadata
 __version__ = "1.0.0"
