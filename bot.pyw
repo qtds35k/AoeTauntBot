@@ -1,13 +1,10 @@
 import os
 import discord, asyncio
-from dotenv import load_dotenv
 from discord import FFmpegPCMAudio
 from discord.ext import commands
 from discord.utils import get
 
-load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-
 intents = discord.Intents.all()
 intents.members = True  # Subscribe to the privileged members intent.
 client = commands.Bot(command_prefix='.', intents=intents)
