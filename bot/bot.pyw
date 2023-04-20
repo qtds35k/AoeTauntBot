@@ -1,10 +1,13 @@
 import os
 import discord, asyncio
+from dotenv import load_dotenv
 from discord import FFmpegPCMAudio
 from discord.ext import commands
 from discord.utils import get
 
+load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+
 intents = discord.Intents.all()
 intents.members = True  # Subscribe to the privileged members intent.
 client = commands.Bot(command_prefix='.', intents=intents)
@@ -45,7 +48,7 @@ async def taunt(ctx):
             print('Bot already connected.')
 
     tauntCode = ctx.message.content.replace('.','')
-    tauntUrl = tauntCode + '.ogg'
+    tauntUrl = 'audio/' + tauntCode + '.ogg'
     source = FFmpegPCMAudio(tauntUrl)
 
     try:

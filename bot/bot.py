@@ -48,7 +48,7 @@ async def taunt(ctx):
             print('Bot already connected.')
 
     tauntCode = ctx.message.content.replace('.','')
-    tauntUrl = tauntCode + '.ogg'
+    tauntUrl = 'audio/' + tauntCode + '.ogg'
     source = FFmpegPCMAudio(tauntUrl)
 
     try:
