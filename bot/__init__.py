@@ -21,3 +21,6 @@ def play_audio(audio_name):
 __version__ = "1.0.0"
 __author__ = "John Doe"
 __description__ = "A bot that taunts you with audio clips from Age of Empires II."
+
+# Add port information
+PORT = 8080

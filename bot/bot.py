@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from discord import FFmpegPCMAudio
 from discord.ext import commands
 from discord.utils import get
+from flask import Flask
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -12,6 +13,15 @@ intents = discord.Intents.all()
 intents.members = True  # Subscribe to the privileged members intent.
 client = commands.Bot(command_prefix='.', intents=intents)
 client.remove_command('help')
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Hello, World!"
+
+if __name__ == '__main__':
+    app.run(port=8080)
 
 @client.event
 async def on_ready():
