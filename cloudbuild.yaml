@@ -4,6 +4,5 @@ steps:
 - name: 'gcr.io/cloud-builders/python'
   args: ['pip', 'install', '-r', 'AoeTauntBot/requirements.txt']
 - name: 'gcr.io/cloud-builders/python'
+  env: ['DISCORD_TOKEN=${_DISCORD_TOKEN}']
   args: ['python', 'AoeTauntBot/bot.py']
-env:
-- 'DISCORD_TOKEN=${_DISCORD_TOKEN}'
