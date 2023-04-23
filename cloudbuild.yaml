@@ -1,0 +1,7 @@
+steps:
+- name: 'gcr.io/cloud-builders/git'
+  args: ['clone', 'https://github.com/qtds35k/AoeTauntBot.git']
+- name: 'gcr.io/cloud-builders/python'
+  args: ['pip', 'install', '-r', 'AoeTauntBot/requirements.txt']
+- name: 'gcr.io/cloud-builders/python'
+  args: ['python', 'AoeTauntBot/bot.py']
