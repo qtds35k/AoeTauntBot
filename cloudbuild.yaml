@@ -1,8 +1,8 @@
 steps:
 - name: 'gcr.io/cloud-builders/git'
   args: ['clone', 'https://github.com/qtds35k/AoeTauntBot.git']
-- name: 'gcr.io/cloud-builders/python'
+- name: 'gcr.io/cloud-builders/python:3.9'
   args: ['pip', 'install', '-r', 'AoeTauntBot/requirements.txt']
-- name: 'gcr.io/cloud-builders/python'
+- name: 'gcr.io/cloud-builders/python:3.9'
   env: ['DISCORD_TOKEN=${_DISCORD_TOKEN}']
   args: ['python', 'AoeTauntBot/bot.py']
