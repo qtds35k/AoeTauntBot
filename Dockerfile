@@ -13,11 +13,11 @@ RUN pip3 install -r requirements.txt
 COPY . .
 
 # Make port 80 available to the world outside this container
-EXPOSE 80
-EXPOSE 443
+# EXPOSE 80
+# EXPOSE 443
 
 # Define environment variable
-ENV NAME World
+# ENV NAME World
 
 # Run bot.py when the container launches
-CMD ["python3", "bot/bot.py"]
+CMD ["python3", "app.py"]
