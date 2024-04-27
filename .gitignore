@@ -1,2 +1,5 @@
 .env
 .vscode
+*Dockerfile
+Procfile
+requirements.txt
