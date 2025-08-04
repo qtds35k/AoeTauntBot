@@ -19,7 +19,7 @@ async def on_ready():
     # await client.change_presence(status=discord.Status.idle, activity=discord.Game(name="你媽的奶奶"))
     print('TauntBot onboard.')
 
-@client.command(aliases=['1', '2', '2ja', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '41', '69', '104', '105', '301', '302', 'afk', 'agu', 'ah', 'ah2', 'ahnia', 'ate' , 'baan', 'bb', 'bb2', 'brain', 'bling', 'brush', 'call', 'crap', 'da', 'da2', 'deserve', 'dick', 'dick2', 'dick3', 'die', 'die2', 'dio', 'dog', 'door', 'dunno', 'eh', 'eh2', 'fine', 'fine2', 'fine3', 'fish', 'g', 'gan', 'gan2', 'gan3', 'gg', 'gibai', 'go', 'go2', 'guan', 'hard', 'hehe', 'hey', 'hey2', 'imp', 'in', 'iyo', 'ja', 'jizz', 'jizz2', 'jizz3', 'justice', 'kaka', 'lilai', 'lager', 'luv', 'ma', 'maja', 'majaja', 'me', 'micro', 'myaoe', 'nene', 'nice', 'no', 'no2', 'nodick', 'oyo', 'perv', 'pogo', 'quack', 'red', 'reward', 'roger', 'say', 'spag', 'start', 'thx', 'turk', 'up', 'wait', 'where', 'wifi', 'yahoo', 'yay', 'yay2', 'zawarudo'])
+@client.command(aliases=['1', '2', '2ja', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '41', '69', '104', '105', '301', '302', 'afk', 'agu', 'ah', 'ah2', 'ahnia', 'air', 'ate' , 'baan', 'barracks', 'bb', 'bb2', 'brain', 'bling', 'brush', 'call', 'crap', 'da', 'da2', 'deserve', 'dick', 'dick2', 'dick3', 'die', 'die2', 'dio', 'dog', 'door', 'dunno', 'eh', 'eh2', 'fine', 'fine2', 'fine3', 'fire', 'fish', 'g', 'gan', 'gan2', 'gan3', 'gg', 'gibai', 'go', 'go2', 'guan', 'hard', 'hehe', 'hey', 'hey2', 'imp', 'in', 'iyo', 'ja', 'jizz', 'jizz2', 'jizz3', 'justice', 'kaka', 'lilai', 'lager', 'luv', 'ma', 'maja', 'majaja', 'me', 'micro', 'myaoe', 'nene', 'nice', 'no', 'no2', 'nodick', 'nowood', 'oyo', 'perv', 'pogo', 'quack', 'red', 'reward', 'roger', 'say', 'spag', 'start', 'thx', 'turk', 'up', 'wait', 'where', 'wifi', 'yahoo', 'yay', 'yay2', 'zawarudo'])
 async def taunt(ctx):
     botMessage = ''
     if ctx.message.author.voice == None:
@@ -85,6 +85,9 @@ async def help(ctx):
     
     additionalTaunt = 'afk, ate, fish, ja, jizz3, kaka, micro, red, start'
     embed.add_field(name='05/09/2025', value=additionalTaunt, inline=False)
+    
+    additionalTaunt = 'air, barracks, fire, nowood'
+    embed.add_field(name='08/03/2025', value=additionalTaunt, inline=False)
     
     await channel.send(embed=embed)
 

@@ -1,6 +1,5 @@
-discord.py==1.7.3
-python-dotenv==0.19.0
-ffmpeg==1.4
-PyNaCl==1.4.0
-dnspython==1.16.0
-autopep8==1.4.3
+git+https://github.com/Rapptz/discord.py
+git+https://github.com/theskumar/python-dotenv
+git+https://github.com/rthalley/dnspython
+git+https://github.com/hhatto/autopep8
+git+https://github.com/pyca/pynacl
