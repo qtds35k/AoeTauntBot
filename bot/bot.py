@@ -19,7 +19,7 @@ async def on_ready():
     # await client.change_presence(status=discord.Status.idle, activity=discord.Game(name="你媽的奶奶"))
     print('TauntBot onboard.')
 
-@client.command(aliases=['1', '2', '2ja', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '41', '69', '104', '105', '301', '302', 'afk', 'agu', 'ah', 'ah2', 'ahnia', 'air', 'ate' , 'baan', 'barracks', 'bb', 'bb2', 'brain', 'bling', 'brush', 'call', 'crap', 'da', 'da2', 'deserve', 'dick', 'dick2', 'dick3', 'die', 'die2', 'dio', 'dog', 'door', 'dunno', 'eh', 'eh2', 'fine', 'fine2', 'fine3', 'fire', 'fish', 'g', 'gan', 'gan2', 'gan3', 'gg', 'gibai', 'go', 'go2', 'guan', 'hard', 'hehe', 'hey', 'hey2', 'imp', 'in', 'iyo', 'ja', 'jizz', 'jizz2', 'jizz3', 'justice', 'kaka', 'lilai', 'lager', 'luv', 'ma', 'maja', 'majaja', 'me', 'micro', 'myaoe', 'nene', 'nice', 'no', 'no2', 'nodick', 'nowood', 'oyo', 'perv', 'pogo', 'quack', 'red', 'reward', 'roger', 'say', 'spag', 'start', 'thx', 'turk', 'up', 'wait', 'where', 'wifi', 'yahoo', 'yay', 'yay2', 'zawarudo'])
+@client.command(aliases=['1', '2', '2ja', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '18', '23', '24', '29', '30', '34', '35', '41', '69', '104', '105', '301', '302', 'afk', 'agu', 'ah', 'ah2', 'ahnia', 'air', 'ate' , 'baan', 'barracks', 'bb', 'bb2', 'boring', 'boring2', 'boring3', 'brain', 'black', 'bling', 'brush', 'call', 'crap', 'da', 'da2', 'dc', 'deserve', 'dick', 'dick2', 'dick3', 'die', 'die2', 'dio', 'dog', 'door', 'dunno', 'eh', 'eh2', 'fine', 'fine2', 'fine3', 'fire', 'fish', 'g', 'gan', 'gan2', 'gan3', 'gg', 'gibai', 'go', 'go2', 'guan', 'hard', 'hehe', 'hey', 'hey2', 'holo', 'imp', 'in', 'iyo', 'ja', 'jizz', 'jizz2', 'jizz3', 'justice', 'kaka', 'lilai', 'lager', 'luv', 'ma', 'maja', 'majaja', 'me', 'micro', 'myaoe', 'nene', 'nice', 'no', 'no2', 'nodick', 'nowood', 'order', 'oyo', 'perv', 'pogo', 'quack', 'red', 'reward', 'roger', 'say', 'spag', 'start', 'thx', 'turk', 'up', 'wait', 'where', 'wifi', 'wp', 'yahoo', 'yay', 'yay2', 'zawarudo', 'zz', 'zzz', 'jan', 'respect', 'sit'])
 async def taunt(ctx):
     botMessage = ''
     if ctx.message.author.voice == None:
@@ -77,17 +77,23 @@ async def help(ctx):
     helpMsg = 'Simply type a dot ( . ) followed by AOE2 in-game taunt code. The bot will enter voice channel and shout out the taunt.\n Example: type \" .14 \" -> bot will say \"Start the game already\"'
     embed.add_field(name='Usage', value=helpMsg, inline=False)
     
-    otherAoeSounds = '301/302 (MBL wololo), agu, bling, brain, brush, crap, dog, door, eh, eh2, fine, gg, hey, hey2, lilai, ma, perv, pogo, thx'
+    otherAoeSounds = '301/302 (MBL wololo), agu, bling, brain, brush, crap, dog, door, eh, eh2, fine, gg, hey, hey2, holo, lilai, ma, order, perv, pogo, thx'
     embed.add_field(name='Other AOE sounds', value=otherAoeSounds, inline=False)
     
-    additionalTaunt = '2ja, 41, 69, ah, ah2, ahnia, baan, bb, bb2, call, da, dick, deserve, dick2, dick3, die, die2, dio, dunno, fine2, fine3, g, gan, gan2, gan3, gibai, go, go2, guan, hehe, imp, in, hard, iyo, jizz, jizz2, justice, lager, luv, maja, majaja, me, myaoe, nene, nice, no, no2, nodick, oyo, quack, reward, roger, say, spag, turk, up, wait, wifi, yahoo, yay, yay2, where, zawarudo'
+    additionalTaunt = '2ja, 41, 69, ah, ah2, ahnia, baan, bb, bb2, black, call, da, dc, dick, deserve, dick2, dick3, die, die2, dio, dunno, fine2, fine3, g, gan, gan2, gan3, gibai, go, go2, guan, hehe, imp, in, hard, iyo, jizz, jizz2, justice, lager, luv, maja, majaja, me, myaoe, nene, nice, no, no2, nodick, oyo, quack, reward, roger, say, spag, turk, up, wait, wifi, wp, yahoo, yay, yay2, where, zawarudo'
     embed.add_field(name='Additional taunts', value=additionalTaunt, inline=False)
     
     additionalTaunt = 'afk, ate, fish, ja, jizz3, kaka, micro, red, start'
-    embed.add_field(name='05/09/2025', value=additionalTaunt, inline=False)
+    embed.add_field(name='May 2025', value=additionalTaunt, inline=False)
     
-    additionalTaunt = 'air, barracks, fire, nowood'
-    embed.add_field(name='08/03/2025', value=additionalTaunt, inline=False)
+    additionalTaunt = 'air, barracks, boring, boring2, boring3, fire, nowood'
+    embed.add_field(name='Aug 2025', value=additionalTaunt, inline=False)
+    
+    additionalTaunt = 'zz, zzz'
+    embed.add_field(name='Sep 2025', value=additionalTaunt, inline=False)
+    
+    additionalTaunt = 'jan, respect, sit'
+    embed.add_field(name='Sep 2025', value=additionalTaunt, inline=False)
     
     await channel.send(embed=embed)
 
