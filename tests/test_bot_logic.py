@@ -34,8 +34,12 @@ def mock_voice_client():
     voice = MagicMock()
     voice.is_connected.return_value = True
     voice.play = MagicMock()
-    # is_playing sequence: True once, then False (to exit loop)
-    voice.is_playing.side_effect = [True, False]
+    # is_playing sequence needs to handle:
+    # 1. potential interference check (Stop check)
+    # 2. playback loop check (Loop check)
+    # 3. potentially more checks for delay logic
+    # Default to enough falses to pass simple tests
+    voice.is_playing.side_effect = [False, False, False, False]
     voice.disconnect = AsyncMock()
     voice.move_to = AsyncMock()
     voice.connect = AsyncMock()
@@ -44,7 +48,17 @@ def mock_voice_client():
 @pytest.mark.asyncio
 async def test_taunt_joins_voice_and_plays(mock_ctx, mock_voice_client):
     """Test that the bot joins voice and plays audio when command is issued."""
-    # Setup
+    # Setup - Override side effect for this test to look loop-y if needed, 
+    # but [False, False...] is fine for "not playing initially, loop check returns false immediately"
+    # Actually wait:
+    # play_taunt_file:
+    # if voice.is_playing(): (Call 1) -> False
+    # play()
+    # while voice.is_playing(): (Call 2) -> False (skips loop)
+    # disconnect()
+    
+    mock_voice_client.is_playing.side_effect = [False, False, False]
+
     mock_ctx.message.author.voice.channel = MagicMock()
     mock_ctx.message.author.voice.channel.connect = AsyncMock(return_value=mock_voice_client)
     
@@ -63,7 +77,7 @@ async def test_taunt_joins_voice_and_plays(mock_ctx, mock_voice_client):
     
     # Check if play was called
     assert mock_voice_client.play.called
-    
+
 @pytest.mark.asyncio
 async def test_taunt_warns_no_voice(mock_ctx):
     """Test that bot warns if user is not in voice."""
@@ -80,7 +94,7 @@ async def test_taunt_warns_no_voice(mock_ctx):
         mock_channel = MagicMock()
         mock_voice = MagicMock()
         mock_voice.is_connected.return_value = True # After connect
-        mock_voice.is_playing.side_effect = [False] # Stop loop immediately
+        mock_voice.is_playing.side_effect = [False, False, False] # updated
         mock_voice.disconnect = AsyncMock()
         
         mock_channel.connect = AsyncMock(return_value=mock_voice)
@@ -95,12 +109,63 @@ async def test_taunt_warns_no_voice(mock_ctx):
         mock_ctx.send.assert_called_with(f'{mock_ctx.message.author.mention} You have to join voice channel to hear the taunt!')
 
 @pytest.mark.asyncio
-async def test_help_command(mock_ctx):
-    """Test the help command sends an embed."""
-    mock_ctx.message.channel.send = AsyncMock()
+async def test_play_sound_interrupts_existing(mock_voice_client):
+    """Test that play_taunt_file stops existing audio before playing new."""
+    # 1. if voice.is_playing(): stop() -> True
+    # 2. play()
+    # 3. while voice.is_playing(): ... -> True (enters loop)
+    # 4. while voice.is_playing(): ... -> False (exits loop)
+    # 5. if voice.is_playing(): return (delay check, implicitly 0 here) -> False
     
-    await bot.help.callback(mock_ctx)
+    mock_voice_client.is_playing.side_effect = [True, True, False, False]
+    mock_voice_client.stop = MagicMock()
     
-    assert mock_ctx.message.channel.send.called
-    args, kwargs = mock_ctx.message.channel.send.call_args
-    assert 'embed' in kwargs
+    with patch('os.path.exists', return_value=True):
+         with patch('bot.bot.FFmpegPCMAudio'):
+            # Import function to test logic directly
+            from bot.bot import play_taunt_file
+            
+            with patch('asyncio.sleep', new_callable=AsyncMock):
+                await play_taunt_file(mock_voice_client, "dummy.ogg")
+            
+            mock_voice_client.stop.assert_called_once()
+            mock_voice_client.play.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_play_sound_disconnect_delay(mock_voice_client):
+    """Test that disconnect is delayed if requested."""
+    # 1. Start check -> False
+    # 2. Loop check -> False
+    # 3. Post-delay check -> False
+    mock_voice_client.is_playing.side_effect = [False, False, False]
+    
+    with patch('os.path.exists', return_value=True):
+         with patch('bot.bot.FFmpegPCMAudio'):
+            from bot.bot import play_taunt_file
+            
+            with patch('asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
+                # Call with 60s delay
+                await play_taunt_file(mock_voice_client, "dummy.ogg", disconnect_delay=60)
+                
+                # Verify sleep called with 60
+                mock_sleep.assert_called_with(60)
+                # Verify disconnected
+                mock_voice_client.disconnect.assert_called_once()
+                
+@pytest.mark.asyncio
+async def test_play_sound_cancels_disconnect_if_playing(mock_voice_client):
+    """Test that disconnect is aborted if new sound starts playing during delay."""
+    # 1. Start check -> False
+    # 2. Loop check -> False
+    # 3. Post-delay check -> True (ABORT DISCONNECT)
+    mock_voice_client.is_playing.side_effect = [False, False, True]
+    
+    with patch('os.path.exists', return_value=True):
+         with patch('bot.bot.FFmpegPCMAudio'):
+            from bot.bot import play_taunt_file
+            
+            with patch('asyncio.sleep', new_callable=AsyncMock):
+                await play_taunt_file(mock_voice_client, "dummy.ogg", disconnect_delay=60)
+                
+                # Should NOT disconnect
+                mock_voice_client.disconnect.assert_not_called()

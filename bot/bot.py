@@ -35,11 +35,51 @@ for cat_name, items in LEGACY_CATEGORIES:
     for item in items:
         LEGACY_LOOKUP[item] = cat_name
 
+import random
+
 @client.event
 async def on_ready():
     await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name='.help'))
     print('TauntBot onboard.')
     print(f'Registered {len(client.commands)} commands (excluding help).')
+
+async def play_taunt_file(voice, tauntUrl, disconnect_delay=0):
+    if not voice:
+        print("Voice client is None, cannot play.")
+        return
+
+    if os.path.exists(tauntUrl):
+        source = FFmpegPCMAudio(tauntUrl)
+
+        if voice.is_playing():
+            voice.stop()
+
+        try:
+            player = voice.play(source)
+        except Exception as e:
+            print(f"Error playing audio: {e}")
+            return
+
+        while voice.is_playing():
+            await asyncio.sleep(1)
+            
+        # Optional: Wait before disconnecting
+        if disconnect_delay > 0:
+            await asyncio.sleep(disconnect_delay)
+            
+        # Check if something else started playing while we waited
+        if voice.is_playing():
+            print("Another sound started, cancelling disconnect.")
+            return
+
+        try:
+            if voice.is_connected():
+                await voice.disconnect()
+                print('Bot peace out.')
+        except:
+            pass # Already disconnected or other error
+    else:
+        print(f'File not found: {tauntUrl}')
 
 async def play_taunt(ctx):
     botMessage = ''
@@ -72,27 +112,45 @@ async def play_taunt(ctx):
     tauntCode = ctx.command.name
     tauntUrl = os.path.join(AUDIO_DIR, f'{tauntCode}.ogg')
     
-    if os.path.exists(tauntUrl):
-        source = FFmpegPCMAudio(tauntUrl)
-
-        try:
-            player = voice.play(source)
-        except:
-            print('Another taunt is playing. Dropping latter request.')
-
-        while voice.is_playing():
-            await asyncio.sleep(60)
-        else:
-            await voice.disconnect()
-            print('Bot peace out.')
-    else:
-        print(f'File not found: {tauntUrl}')
+    # Commands stay for 60 seconds
+    await play_taunt_file(voice, tauntUrl, disconnect_delay=60)
 
     # Cleanup command (and bot message)
     if botMessage != '':
         await botMessage.delete()
     await ctx.message.delete()
     print('Cleared commands.')
+
+@client.event
+async def on_voice_state_update(member, before, after):
+    # Ignore bots
+    if member.bot:
+        return
+
+    # Trigger only on joining a channel (from None or from another channel)
+    if after.channel is not None and before.channel != after.channel:
+        channel = after.channel
+        guild = member.guild
+        
+        voice = get(client.voice_clients, guild=guild)
+        if voice and voice.is_connected():
+             if voice.channel != channel:
+                await voice.move_to(channel)
+        else:
+            try:
+                voice = await channel.connect()
+            except:
+                print('Bot already connected.')
+        
+        # Pick random taunt
+        if os.path.exists(AUDIO_DIR):
+            files = [f for f in os.listdir(AUDIO_DIR) if f.endswith('.ogg')]
+            if files:
+                random_taunt = random.choice(files)
+                tauntUrl = os.path.join(AUDIO_DIR, random_taunt)
+                print(f"User joined {channel.name}, playing {random_taunt}")
+                # Auto-taunt leaves immediately (delay=0)
+                await play_taunt_file(voice, tauntUrl, disconnect_delay=0)
 
 # Dynamic Command Registration
 if os.path.exists(AUDIO_DIR):
