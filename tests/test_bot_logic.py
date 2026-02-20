@@ -79,34 +79,53 @@ async def test_taunt_joins_voice_and_plays(mock_ctx, mock_voice_client):
     assert mock_voice_client.play.called
 
 @pytest.mark.asyncio
-async def test_taunt_warns_no_voice(mock_ctx):
-    """Test that bot warns if user is not in voice."""
+async def test_taunt_warns_and_joins_populated_channel(mock_ctx):
+    """Test that bot warns and joins most populated channel if user is not in voice."""
     mock_ctx.message.author.voice = None
     
     # Mock sending message
     mock_ctx.send.return_value = MagicMock()
     mock_ctx.send.return_value.delete = AsyncMock()
     
-    # Mock finding 'General' channel (returning None to trigger the nested logic or Just returning one to test that path)
-    # The code does: channel = discord.utils.get(ctx.guild.channels, name='General')
-    # Use patch for discord.utils.get
-    with patch('bot.bot.discord.utils.get') as mock_get:
-        mock_channel = MagicMock()
-        mock_voice = MagicMock()
-        mock_voice.is_connected.return_value = True # After connect
-        mock_voice.is_playing.side_effect = [False, False, False] # updated
-        mock_voice.disconnect = AsyncMock()
-        
-        mock_channel.connect = AsyncMock(return_value=mock_voice)
-        mock_get.return_value = mock_channel 
-        
-        # We also need to mock client.voice_clients get to return None initially so it tries to connect
-        with patch('bot.bot.get', return_value=None):
-             with patch('os.path.exists', return_value=True):
-                with patch('asyncio.sleep', new_callable=AsyncMock):
-                    await bot.play_taunt(mock_ctx)
-             
-        mock_ctx.send.assert_called_with(f'{mock_ctx.message.author.mention} You have to join voice channel to hear the taunt!')
+    # Mock voice channels
+    channel1 = MagicMock()
+    channel1.name = "Channel 1"
+    channel1.members = [MagicMock(), MagicMock()] # 2 members
+    
+    channel2 = MagicMock()
+    channel2.name = "Channel 2"
+    channel2.members = [MagicMock()] * 5 # 5 members (Winner)
+    
+    channel3 = MagicMock()
+    channel3.name = "Channel 3"
+    channel3.members = [MagicMock()] # 1 member
+    
+    # Assign voice channels to guild
+    mock_ctx.guild.voice_channels = [channel1, channel2, channel3]
+    
+    # Mock voice client from connect
+    mock_voice = MagicMock()
+    mock_voice.is_connected.return_value = True
+    mock_voice.is_playing.side_effect = [False, False, False]
+    mock_voice.disconnect = AsyncMock()
+    
+    # Setup connect return value
+    channel2.connect = AsyncMock(return_value=mock_voice)
+    
+    # We also need to mock client.voice_clients get to return None initially so it tries to connect
+    with patch('bot.bot.get', return_value=None):
+         with patch('os.path.exists', return_value=True):
+            with patch('asyncio.sleep', new_callable=AsyncMock):
+                await bot.play_taunt(mock_ctx)
+         
+    # Verify warning sent
+    expected_msg = f"{mock_ctx.message.author.mention} You have to join voice channel to hear the taunt! I'll join Channel 2 since it has the most people."
+    mock_ctx.send.assert_called_with(expected_msg)
+    
+    # Verify connected to Channel 2
+    channel2.connect.assert_called_once()
+    # Verify play called
+    mock_voice.play.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_play_sound_interrupts_existing(mock_voice_client):
@@ -169,3 +188,94 @@ async def test_play_sound_cancels_disconnect_if_playing(mock_voice_client):
                 
                 # Should NOT disconnect
                 mock_voice_client.disconnect.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_specific_user_taunt(mock_voice_client):
+    """Test that a specific user triggers their assigned taunt."""
+    from bot import bot
+    # Setup mock member
+    member = MagicMock()
+    member.name = 'monkie35k'
+    member.bot = False
+    member.guild = MagicMock()
+    
+    # Setup Voice state
+    before = MagicMock()
+    before.channel = None
+    after = MagicMock()
+    after.channel = MagicMock()
+    after.channel.name = "General"
+    after.channel.connect = AsyncMock(return_value=mock_voice_client)
+    
+    # Mock file system
+    with patch('os.path.exists', return_value=True):
+        with patch('os.listdir', return_value=['yahoo.ogg', 'other.ogg']):
+             with patch('bot.bot.FFmpegPCMAudio'):
+                # Mock get voice client to return None initially
+                with patch('bot.bot.get', return_value=None):
+                    with patch('asyncio.sleep', new_callable=AsyncMock):
+                        await bot.on_voice_state_update(member, before, after)
+                        
+    # Verify the specific file was played
+    # Implicitly verified if no error, but ideally we check args. 
+    # The next test covers arg checking more rigorously.
+    pass 
+
+
+@pytest.mark.asyncio
+async def test_on_voice_state_update_specific_user(mock_voice_client):
+    """Test full flow for a specific user mapping."""
+    # We need to patch play_taunt_file to verify arguments
+    with patch('bot.bot.play_taunt_file', new_callable=AsyncMock) as mock_play:
+        from bot import bot
+        
+        member = MagicMock()
+        member.name = 'monkie35k' # Mapped to 'yahoo'
+        member.bot = False
+        member.guild = MagicMock()
+        
+        before = MagicMock()
+        before.channel = None
+        after = MagicMock()
+        after.channel = MagicMock()
+        after.channel.connect = AsyncMock(return_value=mock_voice_client)
+
+        with patch('os.path.exists', return_value=True):
+            with patch('os.listdir', return_value=['yahoo.ogg', 'random.ogg']):
+                with patch('bot.bot.get', return_value=None):
+                     await bot.on_voice_state_update(member, before, after)
+        
+        # Verify
+        mock_play.assert_called_once()
+        # Verify second argument ends with yahoo.ogg
+        args, _ = mock_play.call_args
+        assert args[1].endswith('yahoo.ogg')
+
+
+@pytest.mark.asyncio
+async def test_on_voice_state_update_random_user(mock_voice_client):
+    """Test full flow for unmapped user."""
+    with patch('bot.bot.play_taunt_file', new_callable=AsyncMock) as mock_play:
+        from bot import bot
+        
+        member = MagicMock()
+        member.name = 'unknown_user' 
+        member.bot = False
+        member.guild = MagicMock()
+        
+        before = MagicMock()
+        before.channel = None
+        after = MagicMock()
+        after.channel = MagicMock()
+        after.channel.connect = AsyncMock(return_value=mock_voice_client)
+
+        with patch('os.path.exists', return_value=True):
+            with patch('os.listdir', return_value=['random.ogg']):
+                with patch('bot.bot.get', return_value=None):
+                    with patch('random.choice', return_value='random.ogg'):
+                         await bot.on_voice_state_update(member, before, after)
+        
+        # Verify
+        mock_play.assert_called_once()
+        args, _ = mock_play.call_args
+        assert args[1].endswith('random.ogg')
