@@ -247,7 +247,7 @@ async def help(ctx):
     channel = ctx.message.channel
     embed = discord.Embed(color = discord.Color.orange())
     
-    helpMsg = 'Simply type a dot ( . ) followed by one of the commands below. The bot will enter voice channel and shout out the taunt.\n Example: type " .14 " -> bot will say "Start the game already"\n\n**Playback Speed**\nYou can change the playback speed by adding a number after the command.\nExample: type ".nowood 0.5" to play at half speed, or ".nowood 2" for double speed.'
+    helpMsg = 'Simply type a dot ( . ) followed by one of the commands below. The bot will enter voice channel and shout out the taunt.\n Example: type " .14 " -> bot will say "Start the game already"\n\n**Playback Speed**\nYou can change the playback speed by adding a number after the command.\nExample: type ".nowood 0.5" to play at half speed, or ".nowood 2" for double speed.\n\n**Channel Selection**\nIf you are not in a voice channel, the bot will automatically join the most populated voice channel.'
     embed.add_field(name='Usage', value=helpMsg, inline=False)
     
     # Organize commands
