@@ -74,13 +74,19 @@ async def on_ready():
     print('TauntBot onboard.')
     print(f'Registered {len(client.commands)} commands (excluding help).')
 
-async def play_taunt_file(voice, tauntUrl, disconnect_delay=0):
+async def play_taunt_file(voice, tauntUrl, disconnect_delay=0, speed=1.0):
     if not voice:
         print("Voice client is None, cannot play.")
         return
 
     if os.path.exists(tauntUrl):
-        source = FFmpegPCMAudio(tauntUrl)
+        # Using rubberband for high-quality time stretching without robotic artifacts
+        options = f'-filter:a "rubberband=tempo={speed}"' if speed != 1.0 else None
+        
+        if options:
+            source = FFmpegPCMAudio(tauntUrl, options=options)
+        else:
+            source = FFmpegPCMAudio(tauntUrl)
 
         if voice.is_playing():
             voice.stop()
@@ -112,8 +118,19 @@ async def play_taunt_file(voice, tauntUrl, disconnect_delay=0):
     else:
         print(f'File not found: {tauntUrl}')
 
-async def play_taunt(ctx):
+async def play_taunt(ctx, *args):
     botMessage = ''
+    speed = 1.0
+    for arg in args:
+        try:
+            val = abs(float(arg))
+            if 0.5 <= val <= 100.0:
+                speed = val
+            elif val > 0 and val < 0.5:
+                speed = 0.5
+        except ValueError:
+            pass
+
     if ctx.message.author.voice == None:
         # Fallback: Join the voice channel with the most members
         voice_channels = ctx.guild.voice_channels
@@ -151,7 +168,7 @@ async def play_taunt(ctx):
     tauntUrl = os.path.join(AUDIO_DIR, f'{tauntCode}.ogg')
     
     # Commands stay for 60 seconds
-    await play_taunt_file(voice, tauntUrl, disconnect_delay=60)
+    await play_taunt_file(voice, tauntUrl, disconnect_delay=60, speed=speed)
 
     # Cleanup command (and bot message)
     if botMessage != '':
@@ -230,7 +247,7 @@ async def help(ctx):
     channel = ctx.message.channel
     embed = discord.Embed(color = discord.Color.orange())
     
-    helpMsg = 'Simply type a dot ( . ) followed by one of the commands below. The bot will enter voice channel and shout out the taunt.\n Example: type \" .14 \" -> bot will say \"Start the game already\"'
+    helpMsg = 'Simply type a dot ( . ) followed by one of the commands below. The bot will enter voice channel and shout out the taunt.\n Example: type " .14 " -> bot will say "Start the game already"\n\n**Playback Speed**\nYou can change the playback speed by adding a number after the command.\nExample: type ".nowood 0.5" to play at half speed, or ".nowood 2" for double speed.'
     embed.add_field(name='Usage', value=helpMsg, inline=False)
     
     # Organize commands
