@@ -26,7 +26,7 @@ This guide will walk you through setting up AoeTauntBot on your Oracle Cloud Alw
     Run the following commands to install Git and the Docker ecosystem:
     ```bash
     sudo apt update
-    sudo apt install git docker.io docker-compose -y
+    sudo apt install git docker.io docker-compose-v2 -y
     sudo systemctl enable --now docker
     # Add your user to the docker group so you don't need sudo for docker commands
     sudo usermod -aG docker $USER
@@ -48,9 +48,9 @@ This guide will walk you through setting up AoeTauntBot on your Oracle Cloud Alw
     *(Replace `your_actual_token_here` with your bot's token).*
 
 5.  **Build and Run the Bot:**
-    Use `docker-compose` to build the image and start the container in the background (`-d` means detached mode).
+    Use `docker compose` to build the image and start the container in the background (`-d` means detached mode).
     ```bash
-    docker-compose up -d --build
+    docker compose up -d --build
     ```
 
 ## Managing the Bot
@@ -61,12 +61,12 @@ This guide will walk you through setting up AoeTauntBot on your Oracle Cloud Alw
     ```
 *   **Stop the Bot:**
     ```bash
-    docker-compose down
+    docker compose down
     ```
 *   **Update the Bot Code:** If you push new Python code to GitHub:
     ```bash
     git pull
-    docker-compose up -d --build
+    docker compose up -d --build
     ```
 *   **Update Audio Files ONLY:** Because we setup a Volume Mount for the `bot/audio` folder, you don't need to rebuild the container if you just add a new `.ogg` file:
     ```bash
