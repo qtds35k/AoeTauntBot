@@ -1,23 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9
+# Use an official lightweight Python image
+FROM python:3.11-slim
+
+# Install ffmpeg, required for playing audio in discord
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set the working directory to /app
 WORKDIR /app
+
+# Copy dependency definition and install
 COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip3 install -r requirements.txt
-# RUN pip install --trusted-host pypi.python.org -r requirements.txt
-
-# Copy the current directory contents into the container at /app
+# Copy the rest of the application
 COPY . .
 
-# Make port 80 available to the world outside this container
-# EXPOSE 80
-# EXPOSE 443
-
-# Define environment variable
-# ENV NAME World
-
-# Run bot.py when the container launches
-CMD ["python3", "app.py"]
+# Run bot.pyw when the container launches
+CMD ["python", "bot/bot.pyw"]

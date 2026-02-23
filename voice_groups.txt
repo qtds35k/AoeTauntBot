@@ -1,0 +1,28 @@
+﻿Scanning audio files...
+Processing 88 files...
+Training on user labels...
+
+==================================================
+SUPERVISED VOICE ANALYSIS RESULTS
+==================================================
+
+group_1 (16 files):
+afk, baan, call, da2, dunno, fish, ja, justice, luv, no, roger, spag, start, wait, where, yay
+
+group_2 (17 files):
+2ja, ate, black, boring, da, dick, dick2, fine2, forgot, go, jizz, maja, majaja, oyo, red, respect, wp
+
+group_3 (25 files):
+air, barracks, bb, bb2, deserve, dio, fine3, fire, gan, gan2, gibai, guan, hehe, in, iyo, jan, lager, me, micro, nene, nice, nowood, quack, wifi, yahoo
+
+group_4 (8 files):
+boring2, boring3, dick3, g, myaoe, nboring, reward, yay2
+
+group_5 (4 files):
+die, hard, imp, zawarudo
+
+group_6 (11 files):
+ah, ah2, ahnia, die2, gan3, go2, jizz2, jizz3, kaka, no2, say
+
+group_7 (7 files):
+dc, nodick, sit, turk, up, zz, zzz
