@@ -15,7 +15,7 @@ This guide will walk you through setting up AoeTauntBot on your Oracle Cloud Alw
     1. Go to your Instance Details page.
     2. Scroll down on the left-hand menu and click **Attached VNICs**.
     3. Click on the name of your primary VNIC.
-    4. On the left menu, click **IPv4 Addresses**.
+    4. At the top of the VNIC details, click the **IP administration** tab (next to Details).
     5. Click the **"..."** menu on the right side of the unassigned IP row and select **Edit**.
     6. Change the Public IP Type from "No public IP" to **"Ephemeral public IP"** and save.
 
