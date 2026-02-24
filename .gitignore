@@ -3,3 +3,4 @@
 bot/bot.pyw
 __pycache__/
 *.pyc
+*.zip
