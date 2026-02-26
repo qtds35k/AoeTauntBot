@@ -3,4 +3,13 @@
 bot/bot.pyw
 __pycache__/
 *.pyc
+
+# Large binary / zip files
 *.zip
+
+# DST server files - do NOT commit these
+dst_linux_server/
+dst_server/
+temp_steamcmd/
+updated_mods/
+.backup/
