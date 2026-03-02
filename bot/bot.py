@@ -1,17 +1,26 @@
 import os
 import discord, asyncio
+from discord import app_commands
 from dotenv import load_dotenv
 from discord import FFmpegPCMAudio
 from discord.ext import commands
 from discord.utils import get
 from datetime import datetime
 from collections import defaultdict
+from typing import List
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
+# Define specific Servers for instant Slash Command syncing
+MY_GUILDS = [
+    discord.Object(id=848324685628178462), # Garage
+    discord.Object(id=717313306754547812)  # AOE2
+]
+
 intents = discord.Intents.all()
 intents.members = True  # Subscribe to the privileged members intent.
+# We keep prefix commands but will restrict their usage via a check
 client = commands.Bot(command_prefix='.', intents=intents)
 client.remove_command('help')
 
@@ -67,9 +76,19 @@ import random
 
 @client.event
 async def on_ready():
-    await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name='.help'))
+    await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name='.help or /t'))
+    
+    # Sync Slash Commands to specified Guilds instantly
+    for guild_object in MY_GUILDS:
+        try:
+            client.tree.copy_global_to(guild=guild_object)
+            await client.tree.sync(guild=guild_object)
+            print(f"Synced slash commands to guild {guild_object.id}")
+        except Exception as e:
+            print(f"Failed to sync to guild {guild_object.id}: {e}")
+            
     print('TauntBot onboard.')
-    print(f'Registered {len(client.commands)} commands (excluding help).')
+    print(f'Registered {len(client.commands)} legacy prefix commands (excluding help).')
 
 async def play_taunt_file(voice, tauntUrl, disconnect_delay=0, speed=1.0):
     if not voice:
@@ -121,10 +140,10 @@ async def play_taunt(ctx, *args):
     for arg in args:
         try:
             val = abs(float(arg))
-            if 0.5 <= val <= 100.0:
+            if 0.1 <= val <= 3.0:
                 speed = val
-            elif val > 0 and val < 0.5:
-                speed = 0.5
+            elif val > 0 and val < 0.1:
+                speed = 0.1
         except ValueError:
             pass
 
@@ -167,11 +186,131 @@ async def play_taunt(ctx, *args):
     # Commands stay for 60 seconds
     await play_taunt_file(voice, tauntUrl, disconnect_delay=60, speed=speed)
 
-    # Cleanup command (and bot message)
+    # Cleanup Legacy Prefix Command (and bot message)
+    # We only execute this if they used the `.` prefix command
     if botMessage != '':
-        await botMessage.delete()
-    await ctx.message.delete()
-    print('Cleared commands.')
+        try:
+            await botMessage.delete()
+        except:
+            pass
+    try:
+        await ctx.message.delete()
+    except discord.Forbidden:
+        print('Missing Manage Messages permission to delete trigger message.')
+    except:
+        pass
+    print(f'Played prefix command .{tauntCode} and attempted cleanup.')
+
+# --- Slash Command Implementation --- #
+
+async def taunt_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> List[app_commands.Choice[str]]:
+    files = [f[:-4] for f in os.listdir(AUDIO_DIR) if f.endswith('.ogg')]
+    
+    # Split the current input to isolate the taunt name from the speed
+    parts = current.split(" ", 1)
+    search_term = parts[0]
+    
+    # If there is a space and stuff after it, save it to append to the choices
+    speed_suffix = ""
+    if len(parts) > 1:
+        speed_suffix = " " + parts[1]
+    elif current.endswith(" "):
+        speed_suffix = " "
+
+    # Find matching taunt names based on the first word
+    matches = [f for f in files if search_term.lower() in f.lower()]
+    
+    # Discord limits autocomplete to 25 choices. 
+    # Return the full matched string: "[TauntName] [Speed]"
+    return [
+        app_commands.Choice(name=f"{match}{speed_suffix}", value=f"{match}{speed_suffix}")
+        for match in matches[:25]
+    ]
+
+@client.tree.command(name="t", description="Play a specific audio taunt")
+@app_commands.describe(
+    query="The taunt name, optionally followed by a speed number (0.1 to 3.0, e.g. 'yahoo 0.5')"
+)
+@app_commands.autocomplete(query=taunt_autocomplete)
+async def slash_taunt(interaction: discord.Interaction, query: str):
+    # Defer immediately to prevent interaction timeout
+    await interaction.response.defer(ephemeral=True)
+    
+    parts = query.strip().split()
+    if not parts:
+        await interaction.followup.send("Please provide a taunt name.", ephemeral=True)
+        return
+        
+    name = parts[0]
+    speed_str = parts[1] if len(parts) > 1 else "1.0"
+    
+    # Parse the user-input string gracefully (to handle ".5" instead of "0.5")
+    parsed_speed = 1.0
+    try:
+        val = abs(float(speed_str))
+        if 0.1 <= val <= 3.0:
+            parsed_speed = val
+        elif val > 0 and val < 0.1:
+            parsed_speed = 0.1
+    except ValueError:
+        pass # Fallback to 1.0 if they type gibberish or nothing
+        
+    filename = f"{name}.ogg"
+    tauntUrl = os.path.join(AUDIO_DIR, filename)
+    
+    if not os.path.exists(tauntUrl):
+        await interaction.followup.send(f"Taunt `{name}` not found.", ephemeral=True)
+        return
+
+    # Check Voice Channel status
+    if interaction.user.voice is None:
+        await interaction.followup.send("You must be in a voice channel to use this command.", ephemeral=True)
+        return
+        
+    channel = interaction.user.voice.channel
+    voice = get(client.voice_clients, guild=interaction.guild)
+    
+    if voice and voice.is_connected():
+        if voice.channel != channel:
+            await voice.move_to(channel)
+    else:
+        try:
+            voice = await channel.connect()
+        except Exception as e:
+            await interaction.followup.send(f"Failed to connect to voice: {e}", ephemeral=True)
+            return
+
+    # Play the Audio
+    await interaction.delete_original_response()
+    await play_taunt_file(voice, tauntUrl, disconnect_delay=60, speed=parsed_speed)
+    print(f'Played slash command /t {name} at {parsed_speed}x speed.')
+
+# --- Global Restriction for Legacy Prefix Commands --- #
+
+ALLOWED_LEGACY_CHANNELS = {'command', 'click here to speak', 'team-1', 'team-2', 'café', 'cafe'}
+
+@client.check
+async def globally_restrict_prefix_commands(ctx):
+    # Ensure '.' text commands ONLY work in explicitly allowed channels
+    if getattr(ctx.channel, 'name', '').lower() in ALLOWED_LEGACY_CHANNELS:
+        return True
+    
+    # If the user typed a '.' command anywhere else, ignore it silently.
+    # Note: returning False naturally raises discord.ext.commands.errors.CheckFailure
+    return False
+
+@client.event
+async def on_command_error(ctx, error):
+    # Ignore the error caused by typing a '.' command in the wrong channel to keep console clean
+    if isinstance(error, commands.CheckFailure):
+        pass
+    elif isinstance(error, commands.CommandNotFound):
+        pass
+    else:
+        print(f"Ignoring exception in command {ctx.command}: {error}")
 
 @client.event
 async def on_voice_state_update(member, before, after):
@@ -264,9 +403,7 @@ if os.path.exists(AUDIO_DIR):
             cmd = commands.Command(play_taunt, name=command_name)
             client.add_command(cmd)
 
-@client.command(pass_context=True)
-async def help(ctx):
-    channel = ctx.message.channel
+def get_help_embed():
     embed = discord.Embed(color = discord.Color.orange())
     
     helpMsg = 'Simply type a dot ( . ) followed by one of the commands below. The bot will enter voice channel and shout out the taunt.\n Example: type " .14 " -> bot will say "Start the game already"\n\n**Playback Speed**\nYou can change the playback speed by adding a number after the command.\nExample: type ".nowood 0.5" to play at half speed, or ".nowood 2" for double speed.\n\n**Channel Selection**\nIf you are not in a voice channel, the bot will automatically join the most populated voice channel.'
@@ -332,12 +469,21 @@ async def help(ctx):
             embed.add_field(name=cat_name, value=', '.join(cmds), inline=False)
             processed_cats.add(cat_name) # Mark processed
             
-    # 3. Uncategorized (New stuff that failed date check?)
+    # 4. Uncategorized (New stuff that failed date check?)
     if categorized_commands["Uncategorized"]:
          cmds = sorted(categorized_commands["Uncategorized"])
          embed.add_field(name="Uncategorized", value=', '.join(cmds), inline=False)
+         
+    return embed
 
-    await channel.send(embed=embed)
+@client.command(pass_context=True)
+async def help(ctx):
+    await ctx.message.channel.send(embed=get_help_embed())
+
+@client.tree.command(name="help", description="Show the list of available taunts")
+async def slash_help(interaction: discord.Interaction):
+    # Ephemeral = True means only the command runner can see the giant help menu
+    await interaction.response.send_message(embed=get_help_embed(), ephemeral=True)
 
 @client.command(name='0')
 async def leave(ctx):
