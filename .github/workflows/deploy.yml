@@ -27,4 +27,9 @@ jobs:
             # Rebuild the docker environment and seamlessly restart the bot
             docker compose up -d --build
             
+            # Print the docker logs so we can see if the bot crashed on startup
+            echo "Waiting for bot to boot..."
+            sleep 5
+            docker logs aoetauntbot --tail 100
+            
             echo "Deployment Complete!"
