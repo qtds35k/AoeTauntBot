@@ -241,7 +241,7 @@ async def slash_taunt(interaction: discord.Interaction, query: str):
     
     parts = query.strip().split()
     if not parts:
-        await interaction.followup.send("Please provide a taunt name.", ephemeral=True)
+        await interaction.delete_original_response()
         return
         
     name = parts[0]
@@ -262,7 +262,7 @@ async def slash_taunt(interaction: discord.Interaction, query: str):
     tauntUrl = os.path.join(AUDIO_DIR, filename)
     
     if not os.path.exists(tauntUrl):
-        await interaction.followup.send(f"Taunt `{name}` not found.", ephemeral=True)
+        await interaction.delete_original_response()
         return
 
     # Check Voice Channel status
@@ -274,7 +274,7 @@ async def slash_taunt(interaction: discord.Interaction, query: str):
             voice_channels.sort(key=lambda vc: len(vc.members), reverse=True)
             channel = voice_channels[0]
         else:
-            await interaction.followup.send("You must be in a voice channel to use this command, and there are no active voice channels to join.", ephemeral=True)
+            await interaction.delete_original_response()
             return
     else:
         channel = interaction.user.voice.channel
@@ -287,7 +287,8 @@ async def slash_taunt(interaction: discord.Interaction, query: str):
         try:
             voice = await channel.connect()
         except Exception as e:
-            await interaction.followup.send(f"Failed to connect to voice: {e}", ephemeral=True)
+            await interaction.delete_original_response()
+            print(f"Failed to connect to voice: {e}")
             return
 
     # Play the Audio
