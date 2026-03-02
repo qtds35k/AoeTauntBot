@@ -17,4 +17,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Run bot.py when the container launches
-CMD ["python", "bot/bot.py"]
+CMD ["python", "-u", "bot/bot.py"]

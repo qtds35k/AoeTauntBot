@@ -5,31 +5,34 @@ on:
     branches:
       - master
 
+concurrency:
+  group: aoetauntbot-deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+      - aoetauntbot
 
     steps:
-      - name: SSH and Deploy Bot
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.ORACLE_HOST }}
-          username: ${{ secrets.ORACLE_USER }}
-          key: ${{ secrets.ORACLE_SSH_KEY }}
-          # The script to run on the Oracle instance after SSH connects
-          script: |
-            # Navigate to whichever folder exists
-            cd ~/aoe_bot || cd ~/AoeTauntBot || exit 1
-            
-            # Pull the latest code
-            git pull origin master
-            
-            # Rebuild the docker environment and seamlessly restart the bot
-            docker compose up -d --build
-            
-            # Print the docker logs so we can see if the bot crashed on startup
-            echo "Waiting for bot to boot..."
-            sleep 5
-            docker logs aoetauntbot --tail 100
-            
-            echo "Deployment Complete!"
+      - name: Deploy Bot
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd ~/aoe_bot || cd ~/AoeTauntBot || exit 1
+
+          git fetch origin master
+          git checkout master
+          git pull --ff-only origin master
+
+          docker compose up -d --build
+
+          echo "Waiting for bot to boot..."
+          sleep 5
+          docker logs aoetauntbot --tail 100
+
+          echo "Deployment Complete!"
