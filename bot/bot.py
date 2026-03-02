@@ -267,10 +267,17 @@ async def slash_taunt(interaction: discord.Interaction, query: str):
 
     # Check Voice Channel status
     if interaction.user.voice is None:
-        await interaction.followup.send("You must be in a voice channel to use this command.", ephemeral=True)
-        return
-        
-    channel = interaction.user.voice.channel
+        # Fallback: Join the voice channel with the most members
+        voice_channels = interaction.guild.voice_channels
+        if voice_channels:
+            # Sort by member count (descending)
+            voice_channels.sort(key=lambda vc: len(vc.members), reverse=True)
+            channel = voice_channels[0]
+        else:
+            await interaction.followup.send("You must be in a voice channel to use this command, and there are no active voice channels to join.", ephemeral=True)
+            return
+    else:
+        channel = interaction.user.voice.channel
     voice = get(client.voice_clients, guild=interaction.guild)
     
     if voice and voice.is_connected():
