@@ -1,4 +1,8 @@
 import os
+import sys
+import socket
+import random
+import logging
 import discord, asyncio
 from discord import app_commands
 from dotenv import load_dotenv
@@ -6,9 +10,11 @@ from discord import FFmpegPCMAudio
 from discord.ext import commands
 from discord.utils import get
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import List
 
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+load_dotenv(os.path.join(ROOT_DIR, '.env'))
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -25,6 +31,22 @@ client = commands.Bot(command_prefix='.', intents=intents)
 client.remove_command('help')
 
 AUDIO_DIR = os.path.join(os.path.dirname(__file__), 'audio')
+LOG_DIR = os.path.join(ROOT_DIR, 'logs')
+LOG_FILE = os.path.join(LOG_DIR, 'tauntbot.log')
+os.makedirs(LOG_DIR, exist_ok=True)
+
+logger = logging.getLogger('tauntbot')
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    logger.addHandler(file_handler)
+
+_guild_voice_locks = {}
 
 # Define Legacy Categories to preserve historical grouping
 # Using list of tuples to maintain order of categories in display
@@ -71,8 +93,7 @@ USER_TAUNT_MAPPING = {
     'cityhunter1624': 'group_8',
     'yuuuu__uuuu___': 'group_9'
 }
-
-import random
+USER_TAUNT_MAPPING = {k.lower(): v for k, v in USER_TAUNT_MAPPING.items()}
 
 @client.event
 async def on_ready():
@@ -83,17 +104,104 @@ async def on_ready():
         try:
             client.tree.copy_global_to(guild=guild_object)
             await client.tree.sync(guild=guild_object)
-            print(f"Synced slash commands to guild {guild_object.id}")
+            logger.info(f"Synced slash commands to guild {guild_object.id}")
         except Exception as e:
-            print(f"Failed to sync to guild {guild_object.id}: {e}")
+            logger.error(f"Failed to sync to guild {guild_object.id}: {e}")
             
-    print('TauntBot onboard.')
-    print(f'Registered {len(client.commands)} legacy prefix commands (excluding help).')
+    logger.info('TauntBot onboard.')
+    logger.info(f'Registered {len(client.commands)} legacy prefix commands (excluding help).')
+
+def get_guild_voice_lock(guild_id: int) -> asyncio.Lock:
+    lock = _guild_voice_locks.get(guild_id)
+    if lock is None:
+        lock = asyncio.Lock()
+        _guild_voice_locks[guild_id] = lock
+    return lock
+
+async def safe_delete_message(message):
+    if message is None:
+        return
+    try:
+        await message.delete()
+    except (discord.Forbidden, discord.NotFound):
+        pass
+    except Exception as e:
+        logger.warning(f'Failed to delete message: {e}')
+
+async def ensure_voice_client(guild, channel):
+    voice = get(client.voice_clients, guild=guild)
+
+    if voice and voice.is_connected():
+        if voice.channel != channel:
+            try:
+                await voice.move_to(channel)
+            except Exception as e:
+                logger.error(f'Failed to move voice client: {e}')
+                return None
+        return voice
+
+    try:
+        return await channel.connect()
+    except discord.ClientException:
+        # Handle races where another coroutine connected first.
+        voice = get(client.voice_clients, guild=guild)
+        if voice and voice.is_connected():
+            if voice.channel != channel:
+                try:
+                    await voice.move_to(channel)
+                except Exception as e:
+                    logger.error(f'Failed to recover and move voice client: {e}')
+                    return None
+            return voice
+        logger.error('Unable to recover existing voice client after connect race.')
+        return None
+    except Exception as e:
+        logger.error(f'Failed to connect to voice channel: {e}')
+        return None
+
+def resolve_member_mapping(member, mapping):
+    candidates = [getattr(member, 'name', None), getattr(member, 'display_name', None)]
+    for candidate in candidates:
+        if candidate:
+            mapped_value = mapping.get(candidate.lower())
+            if mapped_value:
+                return candidate, mapped_value
+    return None, None
+
+def read_log_tail(lines: int) -> str:
+    if not os.path.exists(LOG_FILE):
+        return 'No log file exists yet.'
+    try:
+        with open(LOG_FILE, 'r', encoding='utf-8', errors='replace') as handle:
+            tail_lines = deque(handle, maxlen=lines)
+    except Exception as e:
+        return f'Failed to read log file: {e}'
+
+    if not tail_lines:
+        return 'Log file is empty.'
+
+    return ''.join(tail_lines).rstrip('\n')
+
+def format_log_for_discord(text: str, max_chars: int = 1750) -> str:
+    sanitized = text.replace('```', '`\u200b``')
+    if len(sanitized) > max_chars:
+        sanitized = f'...[truncated to last {max_chars} chars]\n{sanitized[-max_chars:]}'
+    return sanitized
+
+def voice_is_playing(voice) -> bool:
+    try:
+        return bool(voice.is_playing())
+    except StopIteration:
+        # Unit tests can mock finite side-effect sequences.
+        return False
+    except Exception as e:
+        logger.warning(f'Failed to read voice playback state: {e}')
+        return False
 
 async def play_taunt_file(voice, tauntUrl, disconnect_delay=0, speed=1.0):
     if not voice:
-        print("Voice client is None, cannot play.")
-        return
+        logger.warning('Voice client is None, cannot play.')
+        return False
 
     if os.path.exists(tauntUrl):
         # Using rubberband for high-quality time stretching without robotic artifacts
@@ -104,102 +212,106 @@ async def play_taunt_file(voice, tauntUrl, disconnect_delay=0, speed=1.0):
         else:
             source = FFmpegPCMAudio(tauntUrl)
 
-        if voice.is_playing():
+        if voice_is_playing(voice):
             voice.stop()
 
         try:
-            player = voice.play(source)
+            voice.play(source)
         except Exception as e:
-            print(f"Error playing audio: {e}")
-            return
+            logger.error(f'Error playing audio "{tauntUrl}": {e}')
+            return False
 
-        while voice.is_playing():
-            await asyncio.sleep(1)
+        # Give discord.py a brief moment to transition the player into "playing".
+        await asyncio.sleep(0.15)
+        playback_started = False
+        while voice_is_playing(voice):
+            playback_started = True
+            await asyncio.sleep(0.1)
+
+        if not playback_started:
+            logger.warning(f'Playback never reported "is_playing" for "{tauntUrl}".')
             
         # Optional: Wait before disconnecting
         if disconnect_delay > 0:
             await asyncio.sleep(disconnect_delay)
             
         # Check if something else started playing while we waited
-        if voice.is_playing():
-            print("Another sound started, cancelling disconnect.")
-            return
+        if voice_is_playing(voice):
+            logger.info('Another sound started, cancelling disconnect.')
+            return True
 
         try:
             if voice.is_connected():
                 await voice.disconnect()
-                print('Bot peace out.')
-        except:
+                logger.info('Bot peace out.')
+        except Exception:
             pass # Already disconnected or other error
+        return True
     else:
-        print(f'File not found: {tauntUrl}')
+        logger.warning(f'File not found: {tauntUrl}')
+        return False
 
 async def play_taunt(ctx, *args):
-    botMessage = ''
-    speed = 1.0
-    for arg in args:
-        try:
-            val = abs(float(arg))
-            if 0.1 <= val <= 3.0:
-                speed = val
-            elif val > 0 and val < 0.1:
-                speed = 0.1
-        except ValueError:
-            pass
+    if ctx.guild is None:
+        return
 
-    if ctx.message.author.voice == None:
-        # Fallback: Join the voice channel with the most members
-        voice_channels = ctx.guild.voice_channels
-        if voice_channels:
-            # Sort by member count (descending)
-            voice_channels.sort(key=lambda vc: len(vc.members), reverse=True)
-            target_channel = voice_channels[0]
-            
-            # Send warning message
-            botMessage = await ctx.send(f'{ctx.message.author.mention} You have to join voice channel to hear the taunt! I\'ll join {target_channel.name} since it has the most people.')
-            
-            channel = target_channel
+    lock = get_guild_voice_lock(ctx.guild.id)
+    async with lock:
+        botMessage = None
+        speed = 1.0
+        for arg in args:
+            try:
+                val = abs(float(arg))
+                if 0.1 <= val <= 3.0:
+                    speed = val
+                elif val > 0 and val < 0.1:
+                    speed = 0.1
+            except ValueError:
+                pass
+
+        if ctx.message.author.voice is None:
+            # Fallback: Join the voice channel with the most members
+            voice_channels = ctx.guild.voice_channels
+            if voice_channels:
+                voice_channels.sort(key=lambda vc: len(vc.members), reverse=True)
+                target_channel = voice_channels[0]
+                botMessage = await ctx.send(
+                    f"{ctx.message.author.mention} You have to join voice channel to hear the taunt! "
+                    f"I'll join {target_channel.name} since it has the most people."
+                )
+                channel = target_channel
+            else:
+                botMessage = await ctx.send(
+                    f"{ctx.message.author.mention} You have to join voice channel to hear the taunt! "
+                    "And there are no voice channels for me to join."
+                )
+                await asyncio.sleep(5)
+                await safe_delete_message(botMessage)
+                await safe_delete_message(ctx.message)
+                return
         else:
-            # No voice channels found
-            botMessage = await ctx.send(f'{ctx.message.author.mention} You have to join voice channel to hear the taunt! And there are no voice channels for me to join.')
-            await asyncio.sleep(5)
-            # Cleanup command and bot message right before function return
-            await botMessage.delete()
-            await ctx.message.delete()
+            channel = ctx.message.author.voice.channel
+
+        voice = await ensure_voice_client(ctx.guild, channel)
+        if voice is None:
+            await safe_delete_message(botMessage)
+            await safe_delete_message(ctx.message)
             return
-    else:
-        channel = ctx.message.author.voice.channel
 
-    voice = get(client.voice_clients, guild=ctx.guild)
-    if voice and voice.is_connected():
-        await voice.move_to(channel)
-    else:
-        try:
-            voice = await channel.connect()
-        except:
-            print('Bot already connected.')
+        # Dynamic file path based on command name
+        tauntCode = ctx.command.name
+        tauntUrl = os.path.join(AUDIO_DIR, f'{tauntCode}.ogg')
+        logger.info(
+            f'Prefix request by {ctx.message.author} in guild {ctx.guild.id}: .{tauntCode} at {speed}x '
+            f'-> {channel.name}'
+        )
+        
+        # Commands stay for 60 seconds
+        await play_taunt_file(voice, tauntUrl, disconnect_delay=60, speed=speed)
 
-    # Dynamic file path based on command name
-    tauntCode = ctx.command.name
-    tauntUrl = os.path.join(AUDIO_DIR, f'{tauntCode}.ogg')
-    
-    # Commands stay for 60 seconds
-    await play_taunt_file(voice, tauntUrl, disconnect_delay=60, speed=speed)
-
-    # Cleanup Legacy Prefix Command (and bot message)
-    # We only execute this if they used the `.` prefix command
-    if botMessage != '':
-        try:
-            await botMessage.delete()
-        except:
-            pass
-    try:
-        await ctx.message.delete()
-    except discord.Forbidden:
-        print('Missing Manage Messages permission to delete trigger message.')
-    except:
-        pass
-    print(f'Played prefix command .{tauntCode} and attempted cleanup.')
+        await safe_delete_message(botMessage)
+        await safe_delete_message(ctx.message)
+        logger.info(f'Played prefix command .{tauntCode} and attempted cleanup.')
 
 # --- Slash Command Implementation --- #
 
@@ -236,6 +348,10 @@ async def taunt_autocomplete(
 )
 @app_commands.autocomplete(query=taunt_autocomplete)
 async def slash_taunt(interaction: discord.Interaction, query: str):
+    if interaction.guild is None:
+        await interaction.response.send_message('This command only works in a server.', ephemeral=True)
+        return
+
     # Defer immediately to prevent interaction timeout
     await interaction.response.defer(ephemeral=True)
     
@@ -265,36 +381,40 @@ async def slash_taunt(interaction: discord.Interaction, query: str):
         await interaction.delete_original_response()
         return
 
-    # Check Voice Channel status
-    if interaction.user.voice is None:
-        # Fallback: Join the voice channel with the most members
-        voice_channels = interaction.guild.voice_channels
-        if voice_channels:
-            # Sort by member count (descending)
-            voice_channels.sort(key=lambda vc: len(vc.members), reverse=True)
-            channel = voice_channels[0]
+    lock = get_guild_voice_lock(interaction.guild.id)
+    async with lock:
+        # Check Voice Channel status
+        if interaction.user.voice is None:
+            voice_channels = interaction.guild.voice_channels
+            if voice_channels:
+                voice_channels.sort(key=lambda vc: len(vc.members), reverse=True)
+                channel = voice_channels[0]
+            else:
+                await interaction.delete_original_response()
+                return
         else:
+            channel = interaction.user.voice.channel
+
+        voice = await ensure_voice_client(interaction.guild, channel)
+        if voice is None:
             await interaction.delete_original_response()
-            return
-    else:
-        channel = interaction.user.voice.channel
-    voice = get(client.voice_clients, guild=interaction.guild)
-    
-    if voice and voice.is_connected():
-        if voice.channel != channel:
-            await voice.move_to(channel)
-    else:
-        try:
-            voice = await channel.connect()
-        except Exception as e:
-            await interaction.delete_original_response()
-            print(f"Failed to connect to voice: {e}")
             return
 
-    # Play the Audio
-    await interaction.delete_original_response()
-    await play_taunt_file(voice, tauntUrl, disconnect_delay=60, speed=parsed_speed)
-    print(f'Played slash command /t {name} at {parsed_speed}x speed.')
+        # Play the Audio
+        await interaction.delete_original_response()
+        logger.info(
+            f'Slash request by {interaction.user} in guild {interaction.guild.id}: /t {name} {parsed_speed} '
+            f'-> {channel.name}'
+        )
+        await play_taunt_file(voice, tauntUrl, disconnect_delay=60, speed=parsed_speed)
+        logger.info(f'Played slash command /t {name} at {parsed_speed}x speed.')
+
+@client.tree.command(name="logs", description="Show recent taunt bot logs")
+@app_commands.describe(lines="How many lines to show from the end of the log file (1-100)")
+async def slash_logs(interaction: discord.Interaction, lines: app_commands.Range[int, 1, 100] = 20):
+    log_excerpt = read_log_tail(lines)
+    content = format_log_for_discord(log_excerpt)
+    await interaction.response.send_message(f"```text\n{content}\n```", ephemeral=True)
 
 # --- Global Restriction for Legacy Prefix Commands --- #
 
@@ -318,7 +438,7 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.CommandNotFound):
         pass
     else:
-        print(f"Ignoring exception in command {ctx.command}: {error}")
+        logger.error(f"Ignoring exception in command {ctx.command}: {error}")
 
 @client.event
 async def on_voice_state_update(member, before, after):
@@ -328,79 +448,93 @@ async def on_voice_state_update(member, before, after):
 
     # Trigger only on joining a channel (from None or from another channel)
     if after.channel is not None and before.channel != after.channel:
-        channel = after.channel
-        guild = member.guild
-        
-        voice = get(client.voice_clients, guild=guild)
-        if voice and voice.is_connected():
-             if voice.channel != channel:
-                await voice.move_to(channel)
-        else:
-            try:
-                voice = await channel.connect()
-            except:
-                print('Bot already connected.')
-        
-        if os.path.exists(AUDIO_DIR):
-            files = [f for f in os.listdir(AUDIO_DIR) if f.endswith('.ogg')]
-            if not files:
-                return
-                
-            user_name = member.name
-            
-            selected_taunt = None
-            
-            # 1 & 2. Check if user is mapped in the unified USER_TAUNT_MAPPING
-            if user_name in USER_TAUNT_MAPPING:
-                mapped_value = USER_TAUNT_MAPPING[user_name]
-                
-                # Option A: Mapped to a Voice Group
-                if mapped_value.startswith('group_') and mapped_value in TAUNT_VOICE_GROUPS:
-                    # 50% chance to play from their specific group, 50% chance to play from ANY taunt
-                    if random.random() < 0.50:
-                        possible_taunts = TAUNT_VOICE_GROUPS[mapped_value]
-                        valid_taunts = [t for t in possible_taunts if f"{t}.ogg" in files]
-                        if valid_taunts:
-                            selected_taunt = random.choice(valid_taunts)
-                            print(f"[GROUP HIT] User {user_name} mapped to {mapped_value}. Selected {selected_taunt}")
-                
-                # Option B: Mapped to a specific single taunt
-                else: 
-                     target_filename = f"{mapped_value}.ogg"
-                     if target_filename in files:
-                         tauntUrl = os.path.join(AUDIO_DIR, target_filename)
-                         print(f"User {user_name} joined {channel.name}, playing strictly assigned {target_filename}")
-                         await play_taunt_file(voice, tauntUrl, disconnect_delay=0)
-                         return
-            
-            # 3. Handle unmapped users OR 50% chance fallback for mapped users
-            if selected_taunt is None:
-                if user_name not in USER_TAUNT_MAPPING:
-                    # Unlabeled member: 50% unknown pool, 50% labeled pools (Groups 1-9)
-                    if random.random() < 0.50:
-                        possible_taunts = TAUNT_VOICE_GROUPS.get('unknown', [])
-                        valid_taunts = [t for t in possible_taunts if f"{t}.ogg" in files]
-                        if valid_taunts:
-                            selected_taunt = random.choice(valid_taunts)
-                            print(f"[UNKNOWN POOL HIT] Unmapped user {user_name}. Selected {selected_taunt}")
-                    else:
-                        # Pool all known groups together
-                        possible_taunts = []
-                        for grp, taunts in TAUNT_VOICE_GROUPS.items():
-                            if grp.startswith('group_'):
-                                possible_taunts.extend(taunts)
-                        valid_taunts = [t for t in possible_taunts if f"{t}.ogg" in files]
-                        if valid_taunts:
-                            selected_taunt = random.choice(valid_taunts)
-                            print(f"[KNOWN POOL HIT] Unmapped user {user_name}. Selected {selected_taunt}")
-                            
-            # 4. Total Fail-safe Fallback (if pools are empty or 50% mapped fallback triggered)
-            if selected_taunt is None:
-                selected_taunt = random.choice(files)[:-4] # remove .ogg
-                print(f"[RANDOM FALLBACK] User {user_name}. Selected {selected_taunt}")
+        if member.guild is None:
+            return
 
-            tauntUrl = os.path.join(AUDIO_DIR, f"{selected_taunt}.ogg")
-            await play_taunt_file(voice, tauntUrl, disconnect_delay=0)
+        lock = get_guild_voice_lock(member.guild.id)
+        async with lock:
+            channel = after.channel
+            guild = member.guild
+            
+            active_voice = get(client.voice_clients, guild=guild)
+            if active_voice and active_voice.is_connected() and voice_is_playing(active_voice):
+                logger.info(
+                    f'Skipping auto-taunt for {member.name} in {channel.name}; '
+                    'bot is already playing audio.'
+                )
+                return
+
+            voice = await ensure_voice_client(guild, channel)
+            if voice is None:
+                return
+            
+            if os.path.exists(AUDIO_DIR):
+                files = [f for f in os.listdir(AUDIO_DIR) if f.endswith('.ogg')]
+                if not files:
+                    return
+                    
+                selected_taunt = None
+                
+                # 1 & 2. Check if user is mapped in the unified USER_TAUNT_MAPPING
+                mapped_name, mapped_value = resolve_member_mapping(member, USER_TAUNT_MAPPING)
+                if mapped_value:
+                    # Option A: Mapped to a Voice Group
+                    if mapped_value.startswith('group_') and mapped_value in TAUNT_VOICE_GROUPS:
+                        # 50% chance to play from their specific group, 50% chance to play from ANY taunt
+                        if random.random() < 0.50:
+                            possible_taunts = TAUNT_VOICE_GROUPS[mapped_value]
+                            valid_taunts = [t for t in possible_taunts if f"{t}.ogg" in files]
+                            if valid_taunts:
+                                selected_taunt = random.choice(valid_taunts)
+                                logger.info(
+                                    f"[GROUP HIT] User {mapped_name} mapped to {mapped_value}. "
+                                    f"Selected {selected_taunt}"
+                                )
+                    
+                    # Option B: Mapped to a specific single taunt
+                    else: 
+                        target_filename = f"{mapped_value}.ogg"
+                        if target_filename in files:
+                            tauntUrl = os.path.join(AUDIO_DIR, target_filename)
+                            logger.info(
+                                f"User {mapped_name} joined {channel.name}, "
+                                f"playing strictly assigned {target_filename}"
+                            )
+                            await play_taunt_file(voice, tauntUrl, disconnect_delay=0)
+                            return
+                
+                # 3. Handle unmapped users OR 50% chance fallback for mapped users
+                if selected_taunt is None:
+                    if mapped_value is None:
+                        # Unlabeled member: 50% unknown pool, 50% labeled pools (Groups 1-9)
+                        if random.random() < 0.50:
+                            possible_taunts = TAUNT_VOICE_GROUPS.get('unknown', [])
+                            valid_taunts = [t for t in possible_taunts if f"{t}.ogg" in files]
+                            if valid_taunts:
+                                selected_taunt = random.choice(valid_taunts)
+                                logger.info(
+                                    f"[UNKNOWN POOL HIT] Unmapped user {member.name}. Selected {selected_taunt}"
+                                )
+                        else:
+                            # Pool all known groups together
+                            possible_taunts = []
+                            for grp, taunts in TAUNT_VOICE_GROUPS.items():
+                                if grp.startswith('group_'):
+                                    possible_taunts.extend(taunts)
+                            valid_taunts = [t for t in possible_taunts if f"{t}.ogg" in files]
+                            if valid_taunts:
+                                selected_taunt = random.choice(valid_taunts)
+                                logger.info(
+                                    f"[KNOWN POOL HIT] Unmapped user {member.name}. Selected {selected_taunt}"
+                                )
+                                
+                # 4. Total Fail-safe Fallback (if pools are empty or 50% mapped fallback triggered)
+                if selected_taunt is None:
+                    selected_taunt = random.choice(files)[:-4] # remove .ogg
+                    logger.info(f"[RANDOM FALLBACK] User {member.name}. Selected {selected_taunt}")
+
+                tauntUrl = os.path.join(AUDIO_DIR, f"{selected_taunt}.ogg")
+                await play_taunt_file(voice, tauntUrl, disconnect_delay=0)
 
 # Dynamic Command Registration
 if os.path.exists(AUDIO_DIR):
@@ -448,7 +582,7 @@ def get_help_embed():
                 else:
                     categorized_commands["Uncategorized"].append(cmd_name)
             except Exception as e:
-                print(f"Error categorizing {cmd_name}: {e}")
+                logger.warning(f"Error categorizing {cmd_name}: {e}")
                 categorized_commands["Uncategorized"].append(cmd_name)
     
     # Build Embed
@@ -499,9 +633,6 @@ async def leave(ctx):
     if server:
         await server.disconnect()
 
-import socket
-import sys
-
 # Define a specific port for the bot's Instance Lock
 SINGLE_INSTANCE_PORT = 12345
 _instance_lock_socket = None
@@ -512,10 +643,12 @@ def acquire_single_instance_lock():
     try:
         # If the port is already bound, another bot is running
         _instance_lock_socket.bind(("127.0.0.1", SINGLE_INSTANCE_PORT))
-        print("Obtained single-instance lock. Starting bot...")
+        logger.info("Obtained single-instance lock. Starting bot...")
     except OSError:
-        print(f"CRITICAL ERROR: Another instance of the bot is already running (Port {SINGLE_INSTANCE_PORT} is in use).")
-        print("Exiting to prevent duplicate bot connections.")
+        logger.critical(
+            f"Another instance of the bot is already running (Port {SINGLE_INSTANCE_PORT} is in use)."
+        )
+        logger.critical("Exiting to prevent duplicate bot connections.")
         sys.exit(1)
 
 if __name__ == "__main__":
