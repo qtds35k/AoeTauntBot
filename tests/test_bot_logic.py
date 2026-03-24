@@ -166,8 +166,12 @@ async def test_play_sound_disconnect_delay(mock_voice_client):
                 # Call with 60s delay
                 await play_taunt_file(mock_voice_client, "dummy.ogg", disconnect_delay=60)
                 
+                # Await the created task
+                if hasattr(mock_voice_client, '_disconnect_task'):
+                    await mock_voice_client._disconnect_task
+
                 # Verify sleep called with 60
-                mock_sleep.assert_called_with(60)
+                mock_sleep.assert_any_call(60)
                 # Verify disconnected
                 mock_voice_client.disconnect.assert_called_once()
                 
@@ -186,6 +190,9 @@ async def test_play_sound_cancels_disconnect_if_playing(mock_voice_client):
             with patch('asyncio.sleep', new_callable=AsyncMock):
                 await play_taunt_file(mock_voice_client, "dummy.ogg", disconnect_delay=60)
                 
+                if hasattr(mock_voice_client, '_disconnect_task'):
+                    await mock_voice_client._disconnect_task
+
                 # Should NOT disconnect
                 mock_voice_client.disconnect.assert_not_called()
 
@@ -229,6 +236,10 @@ async def test_on_voice_state_update_specific_user(mock_voice_client):
     with patch('bot.bot.play_taunt_file', new_callable=AsyncMock) as mock_play:
         from bot import bot
         
+        # Override the mapping to match expectations of this test
+        old_mapping = bot.USER_TAUNT_MAPPING
+        bot.USER_TAUNT_MAPPING = {'monkie35k': 'yahoo'}
+        
         member = MagicMock()
         member.name = 'monkie35k' # Mapped to 'yahoo'
         member.bot = False
@@ -244,6 +255,8 @@ async def test_on_voice_state_update_specific_user(mock_voice_client):
             with patch('os.listdir', return_value=['yahoo.ogg', 'random.ogg']):
                 with patch('bot.bot.get', return_value=None):
                      await bot.on_voice_state_update(member, before, after)
+        
+        bot.USER_TAUNT_MAPPING = old_mapping
         
         # Verify
         mock_play.assert_called_once()

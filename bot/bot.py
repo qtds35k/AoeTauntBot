@@ -204,13 +204,17 @@ async def play_taunt_file(voice, tauntUrl, disconnect_delay=0, speed=1.0):
         return False
 
     if os.path.exists(tauntUrl):
-        # Using rubberband for high-quality time stretching without robotic artifacts
-        options = f'-filter:a "rubberband=tempo={speed}"' if speed != 1.0 else None
+        # Using adelay to prepend silence, fixing the 0.3s Discord warm-up skip.
+        # Format: adelay=delay_ms|delay_ms (for stereo)
+        silence_padding = "adelay=300|300"
         
-        if options:
-            source = FFmpegPCMAudio(tauntUrl, options=options)
+        if speed != 1.0:
+            # Chain rubberband for speed and adelay for padding
+            options = f'-af "rubberband=tempo={speed},{silence_padding}"'
         else:
-            source = FFmpegPCMAudio(tauntUrl)
+            options = f'-af "{silence_padding}"'
+        
+        source = FFmpegPCMAudio(tauntUrl, options=options)
 
         if voice_is_playing(voice):
             voice.stop()
@@ -223,29 +227,34 @@ async def play_taunt_file(voice, tauntUrl, disconnect_delay=0, speed=1.0):
 
         # Give discord.py a brief moment to transition the player into "playing".
         await asyncio.sleep(0.15)
-        playback_started = False
-        while voice_is_playing(voice):
-            playback_started = True
-            await asyncio.sleep(0.1)
+        
+        async def wait_and_disconnect():
+            try:
+                playback_started = False
+                while voice_is_playing(voice):
+                    playback_started = True
+                    await asyncio.sleep(0.1)
 
-        if not playback_started:
-            logger.warning(f'Playback never reported "is_playing" for "{tauntUrl}".')
-            
-        # Optional: Wait before disconnecting
-        if disconnect_delay > 0:
-            await asyncio.sleep(disconnect_delay)
-            
-        # Check if something else started playing while we waited
-        if voice_is_playing(voice):
-            logger.info('Another sound started, cancelling disconnect.')
-            return True
+                if not playback_started:
+                    logger.warning(f'Playback never reported "is_playing" for "{tauntUrl}".')
+                    
+                if disconnect_delay > 0:
+                    await asyncio.sleep(disconnect_delay)
+                    if not voice_is_playing(voice):
+                        if voice.is_connected():
+                            await voice.disconnect()
+                            logger.info('Bot peace out.')
+            except asyncio.CancelledError:
+                # Task was cancelled by another play_taunt_file call
+                pass
+            except Exception as e:
+                logger.error(f"Error in wait_and_disconnect task: {e}")
 
-        try:
-            if voice.is_connected():
-                await voice.disconnect()
-                logger.info('Bot peace out.')
-        except Exception:
-            pass # Already disconnected or other error
+        # Cancel any existing wait_and_disconnect task to prevent premature disconnects
+        if hasattr(voice, '_disconnect_task') and getattr(voice, '_disconnect_task') is not None:
+            voice._disconnect_task.cancel()
+            
+        voice._disconnect_task = asyncio.create_task(wait_and_disconnect())
         return True
     else:
         logger.warning(f'File not found: {tauntUrl}')
