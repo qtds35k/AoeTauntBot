@@ -545,6 +545,14 @@ async def on_voice_state_update(member, before, after):
                 tauntUrl = os.path.join(AUDIO_DIR, f"{selected_taunt}.ogg")
                 await play_taunt_file(voice, tauntUrl, disconnect_delay=0)
 
+    # Auto-leave when the bot is alone in a voice channel
+    vc = member.guild.voice_client
+    if vc and vc.is_connected():
+        human_members = [m for m in vc.channel.members if not m.bot]
+        if not human_members:
+            logger.info(f"Auto-leaving voice channel '{vc.channel.name}' in '{member.guild.name}' (empty)")
+            await vc.disconnect()
+
 # Dynamic Command Registration
 if os.path.exists(AUDIO_DIR):
     for filename in os.listdir(AUDIO_DIR):
